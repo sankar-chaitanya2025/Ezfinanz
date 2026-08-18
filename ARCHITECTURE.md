@@ -96,3 +96,17 @@ This document records the meaningful architectural and design trade-offs made du
 *   **Alternatives:** Summing all obligations regardless of status, or dynamically calculating it at runtime.
 *   **Why:** A snapshot is necessary for the Eligibility Engine to use immutable inputs. Excluding closed loans correctly reflects the applicant's current debt burden.
 *   **Trade-off:** The snapshot is fixed at the time of `FINANCIALS_COMPLETED`. If the user waits 6 months to proceed, the snapshot might be stale. However, this is an intentional domain design choice (immutable snapshots).
+
+## 14. Pure Deterministic Eligibility Engine
+
+*   **Decision:** The `EligibilityEngine` is a pure TypeScript class with zero dependencies on the database, ORM, or Next.js infrastructure. It only takes a `FinancialFacts` interface and returns an `EligibilityResult`.
+*   **Alternatives:** Coupling the engine to the database by having it query `financial_details` directly.
+*   **Why:** A pure business-rules engine is trivial to unit test, guarantees deterministic outputs for identical inputs, and allows the rules to be easily executed outside of the standard application request lifecycle (e.g. for batch back-testing).
+*   **Trade-off:** We gain pure determinism and perfect testability, but the orchestrating service (`EligibilityService`) must take responsibility for fetching all required data and feeding it into the engine.
+
+## 15. Transactional Orchestration of Eligibility Results
+
+*   **Decision:** The `EligibilityService` wraps the entire evaluation process (state validation, snapshot read, pure engine execution, result insertion, and state transition) inside a single database transaction.
+*   **Alternatives:** Performing the reads, evaluating, and then inserting/updating in separate operations.
+*   **Why:** If the application state transitions to `ELIGIBLE` but the `eligibility_results` insertion fails, the database would be in an inconsistent state, breaking the audit trail.
+*   **Trade-off:** We hold database connections slightly longer during the transaction, but we completely eliminate partial-state vulnerabilities.

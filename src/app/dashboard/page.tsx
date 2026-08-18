@@ -124,6 +124,22 @@ export default async function DashboardPage() {
                     </form>
                   </div>
                 )}
+
+                {app.status === 'FINANCIALS_COMPLETED' && (
+                  <div className="mt-4 p-4 border rounded bg-indigo-50 text-black">
+                    <h4 className="font-semibold mb-2">Evaluate Eligibility</h4>
+                    <form action={async (formData) => {
+                      'use server';
+                      const { evaluateEligibilityAction } = await import('@/app/actions/eligibility');
+                      await evaluateEligibilityAction(formData);
+                    }}>
+                      <input type="hidden" name="applicationId" value={app.id} />
+                      <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded">
+                        Run Eligibility Engine
+                      </button>
+                    </form>
+                  </div>
+                )}
               </div>
             ))}
           </div>
