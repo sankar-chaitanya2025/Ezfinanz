@@ -140,6 +140,40 @@ export default async function DashboardPage() {
                     </form>
                   </div>
                 )}
+
+                {(app.status === 'ELIGIBLE' || app.status === 'PARTIALLY_ELIGIBLE') && (
+                  <div className="mt-4 p-4 border rounded bg-green-50 text-black">
+                    <h4 className="font-semibold mb-2">Offer Generated: {app.status}</h4>
+                    <p className="text-sm mb-4">Please review and select your final loan terms.</p>
+                    <form action={async (formData) => {
+                      'use server';
+                      const { generateAndAcceptTermsAction } = await import('@/app/actions/loanTerms');
+                      await generateAndAcceptTermsAction(formData);
+                    }} className="flex flex-col gap-3">
+                      <input type="hidden" name="applicationId" value={app.id} />
+                      
+                      <div>
+                        <label className="block text-sm">Requested Amount (₹)</label>
+                        <input type="number" name="requestedAmount" defaultValue={app.requestedAmount ? parseFloat(app.requestedAmount) : 0} className="border p-2 rounded w-full" required />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm">Tenure (Months)</label>
+                        <select name="requestedTenure" className="border p-2 rounded w-full" required>
+                          <option value="12">12 Months</option>
+                          <option value="24">24 Months</option>
+                          <option value="36">36 Months</option>
+                          <option value="48">48 Months</option>
+                          <option value="60">60 Months</option>
+                        </select>
+                      </div>
+
+                      <button type="submit" className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded mt-2">
+                        Calculate & Accept Terms
+                      </button>
+                    </form>
+                  </div>
+                )}
               </div>
             ))}
           </div>

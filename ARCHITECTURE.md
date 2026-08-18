@@ -110,3 +110,28 @@ This document records the meaningful architectural and design trade-offs made du
 *   **Alternatives:** Performing the reads, evaluating, and then inserting/updating in separate operations.
 *   **Why:** If the application state transitions to `ELIGIBLE` but the `eligibility_results` insertion fails, the database would be in an inconsistent state, breaking the audit trail.
 *   **Trade-off:** We hold database connections slightly longer during the transaction, but we completely eliminate partial-state vulnerabilities.
+
+## 16. Pure Financial Calculator
+
+*   **Decision:** All mathematical logic for loan terms (EMI, IRR, GST, PF) is isolated in a pure class (`FinancialCalculator`) that uses zero dependencies, not even database context.
+*   **Alternatives:** Calculating these fields directly inside the `LoanTermsService` or relying on Postgres formulas.
+*   **Why:** Financial formulas are sensitive. Isolating them makes unit testing with arbitrary data sets fast and reliable, and strictly prevents "floating point" or state-machine leaks.
+*   **Trade-off:** We must copy data between the database schemas and the calculator input structures, adding boilerplate.
+
+## 17. Explicit Loan Term Generation
+
+*   **Decision:** Terms are not generated automatically when an applicant is deemed eligible. The user must manually select an exact amount and tenure, which then triggers the term generation.
+*   **Alternatives:** Auto-generating a "default" offer and immediately saving it to the `loan_terms` table.
+*   **Why:** Required by the challenge. Giving the user control over the final requested amount and tenure forces us to do on-demand term calculations, ensuring transparency and reducing stale data.
+
+## 18. Decimal-Safe Arithmetic Strategy
+
+*   **Decision:** We use simple custom `round()` half-up functions to 2 decimal places to maintain stability in JavaScript numbers.
+*   **Alternatives:** Using a heavy library like `decimal.js` or `big.js`.
+*   **Why:** For simple EMI retail products without extreme compounding micro-fractions, standard JS `Number` mathematically bound to 2 decimal points using EPSILON padding is perfectly safe and drastically reduces dependency footprint.
+
+## 19. Periodic IRR Calculation
+
+*   **Decision:** The IRR is calculated using a standard periodic annuity NPV solver, treating each month as exactly 1 equal period, and then annualized (`r * 12`).
+*   **Alternatives:** XIRR based on exact calendar dates.
+*   **Why:** At the time of generating loan terms, the exact disbursement date and all subsequent exact repayment calendar dates are unknown. Periodic IRR provides the exact annualized cost standard for retail EMI loans.
