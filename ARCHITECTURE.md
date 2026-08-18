@@ -36,3 +36,12 @@ This document records the meaningful architectural and design trade-offs made du
 *   **Alternatives:** A 1:1 relationship where editing financial details overwrites the previous eligibility result.
 *   **Why:** If a user is rejected, modifies their stated income, and is subsequently approved, an auditor or reviewer needs to see the history of evaluations that led to the final decision.
 *   **Trade-off:** We gain a full historical audit trail of the rules engine, but we give up a simpler 1:1 data model. 
+
+## 6. User Profile Synchronization
+
+*   **Decision:** We synchronize newly registered Supabase Auth users to our application's `users` table directly within the Next.js Server Action (`signup`) rather than using a Postgres Database Trigger or a Webhook.
+*   **Alternatives:** 
+    1. Postgres Database Trigger on `auth.users` insert.
+    2. Supabase Edge Function Webhook on user creation.
+*   **Why:** For this assignment, keeping the sync logic within the application codebase (Server Actions) ensures it is easily discoverable, version-controlled, and doesn't require complex remote database configuration outside of the standard Drizzle migrations.
+*   **Trade-off:** We gain simplicity and codebase cohesion, but give up guaranteed sync for users created outside the application UI (e.g., manually via the Supabase Dashboard).
