@@ -52,3 +52,19 @@ This document records the meaningful architectural and design trade-offs made du
 *   **Alternatives:** Assuming signup always yields an active session.
 *   **Why:** Supabase Auth (with email confirmations enabled) creates the user but prevents login until verified. Failing to handle this null session causes the route protection middleware to silently bounce the user back to the login page, creating a confusing experience.
 *   **Trade-off:** We gain robust auth state handling and a correct authentication flow, but must manage more explicit routing logic in our Server Actions.
+
+## 8. Concurrent Application Constraints
+
+*   **Decision:** A user may have multiple applications over time, but is restricted to at most one *active/in-progress* application at any given time. Terminal states (`REJECTED`, `APPROVED` which implies `DISBURSED` or loan active eventually) allow new application creation. Existing active loans do not block new application creation.
+*   **Alternatives:** 
+    1. Blocking new applications if a user has an active loan.
+    2. Allowing multiple concurrent in-progress applications.
+*   **Why:** Preventing concurrent in-progress applications greatly simplifies state management and prevents users from spamming the origination flow. However, an active loan should not block a new application because a customer might qualify for multiple products. The risk assessment (Eligibility Engine) handles the financial impact of the active loan.
+*   **Trade-off:** Simplifies the UX and state machine, but requires strict enforcement during the creation flow.
+
+## 9. Separation of Concerns: Origination vs. Eligibility
+
+*   **Decision:** The Application Service strictly manages origination (creation, state transitions, audit logs), while an independent Eligibility Engine will handle all financial risk logic (evaluating external credit obligations, past defaults, and income).
+*   **Alternatives:** Checking for defaulted loans or high debt-to-income ratios during the initial application creation step.
+*   **Why:** We separate workflow mechanics from business rules. If a user has a defaulted loan, they can still *create* an application, but the Eligibility Engine will reject it at the appropriate step. This keeps the state machine pure and the rules engine decoupled.
+*   **Trade-off:** We gain architectural purity, but a user might fill out initial KYC steps only to be automatically rejected later due to pre-existing data.
