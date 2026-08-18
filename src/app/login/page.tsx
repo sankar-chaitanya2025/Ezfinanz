@@ -20,7 +20,7 @@ export default async function LoginPage(props: { searchParams: Promise<{ error?:
           <div>
             <label className="block text-sm font-medium" htmlFor="email">Email</label>
             <input 
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black bg-white"
               id="email" 
               name="email" 
               type="email" 
@@ -30,7 +30,7 @@ export default async function LoginPage(props: { searchParams: Promise<{ error?:
           <div>
             <label className="block text-sm font-medium" htmlFor="password">Password</label>
             <input 
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-black bg-white"
               id="password" 
               name="password" 
               type="password" 

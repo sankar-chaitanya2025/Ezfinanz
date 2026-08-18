@@ -45,3 +45,10 @@ This document records the meaningful architectural and design trade-offs made du
     2. Supabase Edge Function Webhook on user creation.
 *   **Why:** For this assignment, keeping the sync logic within the application codebase (Server Actions) ensures it is easily discoverable, version-controlled, and doesn't require complex remote database configuration outside of the standard Drizzle migrations.
 *   **Trade-off:** We gain simplicity and codebase cohesion, but give up guaranteed sync for users created outside the application UI (e.g., manually via the Supabase Dashboard).
+
+## 7. Explicit Handling of Email Verification State
+
+*   **Decision:** The signup Server Action explicitly checks for a null `session` upon successful user creation to route the user to an "email verification required" state, rather than blindly redirecting to the dashboard. During development, email confirmations are disabled to prevent Supabase rate-limiting.
+*   **Alternatives:** Assuming signup always yields an active session.
+*   **Why:** Supabase Auth (with email confirmations enabled) creates the user but prevents login until verified. Failing to handle this null session causes the route protection middleware to silently bounce the user back to the login page, creating a confusing experience.
+*   **Trade-off:** We gain robust auth state handling and a correct authentication flow, but must manage more explicit routing logic in our Server Actions.

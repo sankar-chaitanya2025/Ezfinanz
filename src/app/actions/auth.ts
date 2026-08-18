@@ -56,6 +56,10 @@ export async function signup(formData: FormData) {
     }
   }
 
+  if (!data.session) {
+    redirect('/login?error=Please+check+your+email+to+verify+your+account')
+  }
+
   revalidatePath('/', 'layout')
   redirect('/dashboard')
 }
