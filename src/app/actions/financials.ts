@@ -2,6 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { FinancialService } from '@/services/financialService'
+import { EligibilityService } from '@/services/eligibilityService'
 import { db } from '@/db'
 import { applications } from '@/db/schema'
 import { eq } from 'drizzle-orm'
@@ -58,6 +59,7 @@ export async function submitFinancialsAction(formData: FormData) {
     }
   }
 
+  // Step 1: Submit financials — transitions to FINANCIALS_COMPLETED
   try {
     await FinancialService.submitFinancials(applicationId, user.id, {
       employmentType,
@@ -65,13 +67,23 @@ export async function submitFinancialsAction(formData: FormData) {
       designation,
       monthlyIncome
     })
-    
-    revalidatePath('/dashboard')
-    return { success: true }
   } catch (error) {
     if (error instanceof Error) {
       return { error: error.message }
     }
-    return { error: 'Unknown error occurred' }
+    return { error: 'Failed to submit financial details' }
   }
+
+  // Step 2: Immediately run eligibility evaluation — transitions to ELIGIBLE / PARTIALLY_ELIGIBLE / NOT_ELIGIBLE
+  // This removes the confusing two-button flow from the UI.
+  try {
+    await EligibilityService.evaluateEligibility(applicationId, user.id)
+  } catch (error) {
+    // Financials were saved. Log the issue but don't block the user.
+    // The "Run Eligibility Engine" button on FINANCIALS_COMPLETED is a fallback.
+    console.error('[submitFinancialsAction] Auto-eligibility evaluation failed:', error)
+  }
+
+  revalidatePath('/dashboard')
+  return { success: true }
 }
