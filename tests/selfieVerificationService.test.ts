@@ -18,7 +18,8 @@ vi.mock('@/utils/supabase/server', () => {
 describe('SelfieVerificationService', () => {
   let userId: string
   let appId: string
-  let mockSupabase: any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let mockSupabase: { storage: { from: any; upload: any } }
 
   beforeEach(async () => {
     await clearDatabase()

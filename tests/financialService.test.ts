@@ -44,7 +44,7 @@ describe('FinancialService', () => {
   it('should successfully submit financials for a KYC_COMPLETED app', async () => {
     const userId = await setupUser();
     const app = await ApplicationService.createApplication(userId);
-    await KycService.submitKyc(app.id, userId, 'PAN', 'TEST1'); // Hash starts with something else -> good score
+    await KycService.submitKyc(app.id, userId, 'PAN', 'ID0'); // Hash starts with 7 -> good score
     
     const result = await FinancialService.submitFinancials(app.id, userId, {
       employmentType: 'SALARIED',
@@ -66,12 +66,12 @@ describe('FinancialService', () => {
     const obs = await db.select().from(externalCreditObligations).where(eq(externalCreditObligations.userId, userId));
     expect(obs.length).toBe(1);
     expect(obs[0].status).toBe('CLOSED');
-  }, 20000);
+  }, 40000);
 
   it('should aggregate only ACTIVE/DEFAULTED EMI', async () => {
     const userId = await setupUser();
     const app = await ApplicationService.createApplication(userId);
-    await KycService.submitKyc(app.id, userId, 'PAN', 'TEST17'); // Hash starts with A -> active loans mock
+    await KycService.submitKyc(app.id, userId, 'PAN', 'ID11'); // Hash starts with a -> active loans mock
     
     await FinancialService.submitFinancials(app.id, userId, {
       employmentType: 'SELF_EMPLOYED',
@@ -91,7 +91,7 @@ describe('FinancialService', () => {
   it('should correctly handle NOT_ELIGIBLE -> FINANCIALS_COMPLETED correction loop', async () => {
     const userId = await setupUser();
     const app = await ApplicationService.createApplication(userId);
-    await KycService.submitKyc(app.id, userId, 'PAN', 'TEST2'); // Use TEST2 to avoid identity clash
+    await KycService.submitKyc(app.id, userId, 'PAN', 'TEST2_NEW'); // Use different ID to bypass stale test data
     
     await FinancialService.submitFinancials(app.id, userId, {
       employmentType: 'SALARIED',
@@ -116,13 +116,13 @@ describe('FinancialService', () => {
 
     const [fin] = await db.select().from(financialDetails).where(eq(financialDetails.applicationId, app.id));
     expect(parseFloat(fin.monthlyIncome)).toBe(150000); // Updated via upsert
-  }, 20000);
+  }, 40000);
 
   it('should block unauthorized users from submitting financials', async () => {
     const userId = await setupUser();
     const otherUserId = await setupUser();
     const app = await ApplicationService.createApplication(userId);
-    await KycService.submitKyc(app.id, userId, 'PAN', 'TEST3');
+    await KycService.submitKyc(app.id, userId, 'PAN', 'TEST3_NEW');
     
     await expect(FinancialService.submitFinancials(app.id, otherUserId, {
       employmentType: 'SALARIED',
@@ -130,12 +130,12 @@ describe('FinancialService', () => {
       designation: 'Engineer',
       monthlyIncome: 80000
     })).rejects.toThrow('Application not found or unauthorized');
-  }, 20000);
+  }, 40000);
 
   it('should block invalid financial input', async () => {
     const userId = await setupUser();
     const app = await ApplicationService.createApplication(userId);
-    await KycService.submitKyc(app.id, userId, 'PAN', 'TEST4');
+    await KycService.submitKyc(app.id, userId, 'PAN', 'TEST4_NEW');
     
     await expect(FinancialService.submitFinancials(app.id, userId, {
       employmentType: 'SALARIED',

@@ -31,8 +31,9 @@ export async function submitBankVerificationAction(applicationId: string, formDa
 
     revalidatePath('/dashboard');
     return { success: true, result };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Bank verification error:', error);
-    return { success: false, error: error.message || 'An unexpected error occurred' };
+    const message = error instanceof Error ? error.message : 'An unexpected error occurred';
+    return { success: false, error: message };
   }
 }

@@ -25,8 +25,9 @@ export async function submitDeclarationAction(applicationId: string) {
 
     revalidatePath('/dashboard');
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Declaration error:', error);
-    return { success: false, error: error.message || 'An unexpected error occurred' };
+    const message = error instanceof Error ? error.message : 'An unexpected error occurred';
+    return { success: false, error: message };
   }
 }

@@ -19,7 +19,7 @@ export class ApplicationService {
   /**
    * Creates a new application if the user does not have an active/in-progress one.
    */
-  static async createApplication(userId: string) {
+  static async createApplication(userId: string, requestedAmount?: number, requestedTenure?: number) {
     // 1. Check for existing in-progress applications
     const activeApps = await db.select()
       .from(applications)
@@ -40,7 +40,9 @@ export class ApplicationService {
       const [newApp] = await tx.insert(applications)
         .values({
           userId,
-          status: 'DRAFT'
+          status: 'DRAFT',
+          requestedAmount: requestedAmount?.toString(),
+          requestedTenure: requestedTenure
         })
         .returning()
 
