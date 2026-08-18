@@ -141,10 +141,10 @@ export default async function DashboardPage() {
                   </div>
                 )}
 
-                {(app.status === 'ELIGIBLE' || app.status === 'PARTIALLY_ELIGIBLE') && (
+                {(app.status === 'ELIGIBLE' || app.status === 'PARTIALLY_ELIGIBLE' || app.status === 'TERMS_SELECTED') && (
                   <div className="mt-4 p-4 border rounded bg-green-50 text-black">
-                    <h4 className="font-semibold mb-2">Offer Generated: {app.status}</h4>
-                    <p className="text-sm mb-4">Please review and select your final loan terms.</p>
+                    <h4 className="font-semibold mb-2">Offer Generated / Terms Selection</h4>
+                    <p className="text-sm mb-4">Please review and select your final loan terms. Currently in: {app.status}</p>
                     <form action={async (formData) => {
                       'use server';
                       const { generateAndAcceptTermsAction } = await import('@/app/actions/loanTerms');
@@ -170,6 +170,66 @@ export default async function DashboardPage() {
 
                       <button type="submit" className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded mt-2">
                         Calculate & Accept Terms
+                      </button>
+                    </form>
+                  </div>
+                )}
+
+                {app.status === 'TERMS_SELECTED' && (
+                  <div className="mt-4 p-4 border rounded bg-yellow-50 text-black">
+                    <h4 className="font-semibold mb-2">Bank Account Verification</h4>
+                    <form action={async (formData) => {
+                      'use server';
+                      const { submitBankVerificationAction } = await import('@/app/actions/bankVerification');
+                      await submitBankVerificationAction(app.id, formData);
+                    }} className="space-y-2">
+                      <div>
+                        <label className="block text-sm">Account Number (Simulate failure with 000 at end)</label>
+                        <input type="text" name="accountNumber" className="border p-2 rounded w-full" required />
+                      </div>
+                      <div>
+                        <label className="block text-sm">IFSC Code (e.g. HDFC0001234)</label>
+                        <input type="text" name="ifscCode" className="border p-2 rounded w-full" required />
+                      </div>
+                      <div>
+                        <label className="block text-sm">Account Holder Name</label>
+                        <input type="text" name="accountHolderName" className="border p-2 rounded w-full" required />
+                      </div>
+                      <button type="submit" className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded mt-2">
+                        Verify Bank Account
+                      </button>
+                    </form>
+                  </div>
+                )}
+
+                {app.status === 'BANK_VERIFIED' && (
+                  <div className="mt-4 p-4 border rounded bg-purple-50 text-black">
+                    <h4 className="font-semibold mb-2">Declaration & Consent</h4>
+                    <p className="text-sm italic mb-2">"I hereby declare that the information provided is true and correct. I consent to EZFinanz processing my loan application."</p>
+                    <form action={async () => {
+                      'use server';
+                      const { submitDeclarationAction } = await import('@/app/actions/declaration');
+                      await submitDeclarationAction(app.id);
+                    }}>
+                      <button type="submit" className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded">
+                        Accept Declaration
+                      </button>
+                    </form>
+                  </div>
+                )}
+
+                {(app.status === 'DECLARATION_ACCEPTED' || app.status === 'SELFIE_PENDING') && (
+                  <div className="mt-4 p-4 border rounded bg-pink-50 text-black">
+                    <h4 className="font-semibold mb-2">Selfie Verification</h4>
+                    <p className="text-sm mb-2">Upload a selfie (Simulate failure by including 'blur' or 'invalid' in filename)</p>
+                    <form action={async (formData) => {
+                      'use server';
+                      const { submitSelfieAction } = await import('@/app/actions/selfieVerification');
+                      await submitSelfieAction(app.id, formData);
+                    }} className="space-y-2">
+                      <input type="file" name="selfie" accept="image/*" required className="border p-2 rounded w-full bg-white" />
+                      <button type="submit" className="bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded">
+                        Upload & Verify Selfie
                       </button>
                     </form>
                   </div>
