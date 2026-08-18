@@ -68,3 +68,17 @@ This document records the meaningful architectural and design trade-offs made du
 *   **Alternatives:** Checking for defaulted loans or high debt-to-income ratios during the initial application creation step.
 *   **Why:** We separate workflow mechanics from business rules. If a user has a defaulted loan, they can still *create* an application, but the Eligibility Engine will reject it at the appropriate step. This keeps the state machine pure and the rules engine decoupled.
 *   **Trade-off:** We gain architectural purity, but a user might fill out initial KYC steps only to be automatically rejected later due to pre-existing data.
+
+## 10. KYC Failure Handling and Retries
+
+*   **Decision:** A failed KYC verification (e.g. invalid ID) leaves the application in `KYC_PENDING` rather than transitioning to a terminal `REJECTED` state. The `kyc_details` row is upserted with a `FAILED` verification status, and the user is permitted to retry.
+*   **Alternatives:** Rejecting the application entirely upon KYC failure.
+*   **Why:** External KYC providers can fail for technical reasons or simple user typos. Rejecting the entire application forces the user to restart the origination flow, resulting in poor UX. Upserting the `kyc_details` row leverages the `UNIQUE(applicationId)` constraint effectively while maintaining the domain rule of one KYC snapshot per application. The audit log maintains the historical record of failed attempts.
+*   **Trade-off:** Requires slightly more robust UPSERT logic in the backend, but significantly improves user conversion.
+
+## 11. Cross-Account Identity Deduplication
+
+*   **Decision:** We enforce a strict invariant: a verified identity (`id_type`, `id_number_hash`) may be reused by the *same* user across multiple applications, but MUST NOT be used by a *different* user. This is enforced via an application-level Read-then-Write query within the same database transaction as the KYC insertion, strictly avoiding frozen schema changes.
+*   **Alternatives:** Altering the database schema to add triggers, conditional unique indexes, or a `user_identities` table.
+*   **Why:** A simple `UNIQUE(id_type, id_number_hash)` constraint on `kyc_details` would incorrectly block the *same* user from originating multiple applications over time. Changing the schema violates the frozen architecture requirement. The application-level transactional check minimizes race-condition risks sufficiently for this specific business flow.
+*   **Trade-off:** We perfectly preserve the frozen schema and achieve business rule compliance, but theoretically accept a marginal vulnerability to millisecond-level race conditions under Postgres `READ COMMITTED` isolation.

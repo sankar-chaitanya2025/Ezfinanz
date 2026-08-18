@@ -16,7 +16,10 @@ export async function createApplicationAction() {
     await ApplicationService.createApplication(user.id)
     revalidatePath('/dashboard')
     return { success: true }
-  } catch (error: any) {
-    return { error: error.message }
+  } catch (error) {
+    if (error instanceof Error) {
+      return { error: error.message }
+    }
+    return { error: 'Unknown error occurred' }
   }
 }

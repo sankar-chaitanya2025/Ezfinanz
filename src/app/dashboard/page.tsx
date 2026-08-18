@@ -6,7 +6,6 @@ import { eq } from 'drizzle-orm'
 import { logout } from '@/app/actions/auth'
 
 import { ApplicationService } from '@/services/applicationService'
-import { createApplicationAction } from '@/app/actions/application'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -41,7 +40,11 @@ export default async function DashboardPage() {
       <div>
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">Your Applications</h2>
-          <form action={createApplicationAction}>
+          <form action={async () => {
+            'use server';
+            const { createApplicationAction } = await import('@/app/actions/application');
+            await createApplicationAction();
+          }}>
             <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded" type="submit">
               Create New Application
             </button>
@@ -57,6 +60,35 @@ export default async function DashboardPage() {
                 <p><strong>ID:</strong> {app.id}</p>
                 <p><strong>Status:</strong> {app.status}</p>
                 <p><strong>Created At:</strong> {new Date(app.createdAt).toLocaleString()}</p>
+                
+                {(app.status === 'DRAFT' || app.status === 'KYC_PENDING') && (
+                  <form action={async (formData) => {
+                    'use server';
+                    const { submitKycAction } = await import('@/app/actions/kyc');
+                    await submitKycAction(formData);
+                  }} className="mt-4 p-4 border border-gray-600 rounded bg-gray-900 space-y-2">
+                    <h3 className="font-semibold text-lg">Verify Identity</h3>
+                    <input type="hidden" name="applicationId" value={app.id} />
+                    <div>
+                      <select name="idType" required className="w-full p-2 rounded text-black bg-white border border-gray-300">
+                        <option value="AADHAR">Aadhar</option>
+                        <option value="PAN">PAN</option>
+                      </select>
+                    </div>
+                    <div>
+                      <input 
+                        type="text" 
+                        name="idNumber" 
+                        placeholder="Enter ID Number (Use 'FAIL' to simulate rejection)"
+                        required
+                        className="w-full p-2 rounded text-black bg-white border border-gray-300"
+                      />
+                    </div>
+                    <button type="submit" className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+                      Submit KYC
+                    </button>
+                  </form>
+                )}
               </div>
             ))}
           </div>
