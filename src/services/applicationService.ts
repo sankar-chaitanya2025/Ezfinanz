@@ -64,9 +64,10 @@ export class ApplicationService {
     applicationId: string, 
     newState: ApplicationState, 
     actionByUserId: string, 
-    notes?: string
+    notes?: string,
+    dbOrTx: typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0] = db
   ) {
-    return await db.transaction(async (tx) => {
+    const executeLogic = async (tx: typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0]) => {
       // 1. Fetch current application
       const [currentApp] = await tx.select()
         .from(applications)
@@ -104,6 +105,12 @@ export class ApplicationService {
       })
 
       return updatedApp
-    })
+    }
+
+    if (typeof dbOrTx.transaction === 'function') {
+      return await dbOrTx.transaction(executeLogic)
+    } else {
+      return await executeLogic(dbOrTx)
+    }
   }
 }

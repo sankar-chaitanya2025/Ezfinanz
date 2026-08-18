@@ -82,3 +82,17 @@ This document records the meaningful architectural and design trade-offs made du
 *   **Alternatives:** Altering the database schema to add triggers, conditional unique indexes, or a `user_identities` table.
 *   **Why:** A simple `UNIQUE(id_type, id_number_hash)` constraint on `kyc_details` would incorrectly block the *same* user from originating multiple applications over time. Changing the schema violates the frozen architecture requirement. The application-level transactional check minimizes race-condition risks sufficiently for this specific business flow.
 *   **Trade-off:** We perfectly preserve the frozen schema and achieve business rule compliance, but theoretically accept a marginal vulnerability to millisecond-level race conditions under Postgres `READ COMMITTED` isolation.
+
+## 12. External Credit Obligations Sync Strategy
+
+*   **Decision:** The `external_credit_obligations` table is treated as a localized snapshot/cache of the mock credit bureau's current truth for a given user. During a financial sync, all existing obligations for the user are deleted and replaced (Wipe-and-Replace) with the fresh bureau payload inside a single database transaction.
+*   **Alternatives:** Attempting to `UPSERT` external obligations.
+*   **Why:** The frozen database schema does not have an `externalReferenceId` column in `external_credit_obligations`. Without a unique external identifier, it is impossible to safely upsert individual external loans on repeated syncs (e.g. during correction loops). Wipe-and-Replace ensures no duplicate records are created, perfectly preserving the frozen schema while satisfying the business rule.
+*   **Trade-off:** We lose the historical tracking of external obligations that the bureau might drop from its report, but this is an acceptable tradeoff since external credit history should fundamentally reflect the bureau's current truth.
+
+## 13. Existing EMI Aggregation Rule
+
+*   **Decision:** The `existingEmiObligations` snapshot stored in `financial_details` is calculated by summing the `emiAmount` of all external obligations where the status is `ACTIVE` or `DEFAULTED` only. `CLOSED` or `SANCTIONED` (un-disbursed) obligations contribute 0 to the current EMI burden.
+*   **Alternatives:** Summing all obligations regardless of status, or dynamically calculating it at runtime.
+*   **Why:** A snapshot is necessary for the Eligibility Engine to use immutable inputs. Excluding closed loans correctly reflects the applicant's current debt burden.
+*   **Trade-off:** The snapshot is fixed at the time of `FINANCIALS_COMPLETED`. If the user waits 6 months to proceed, the snapshot might be stale. However, this is an intentional domain design choice (immutable snapshots).

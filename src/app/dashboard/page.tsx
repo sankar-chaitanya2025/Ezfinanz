@@ -89,6 +89,41 @@ export default async function DashboardPage() {
                     </button>
                   </form>
                 )}
+
+                {(app.status === 'KYC_COMPLETED' || app.status === 'NOT_ELIGIBLE') && (
+                  <div className="mt-4 p-4 border rounded bg-blue-50 text-black">
+                    <h4 className="font-semibold mb-2">Submit Financial Details</h4>
+                    <form action={async (formData) => {
+                      'use server';
+                      const { submitFinancialsAction } = await import('@/app/actions/financials');
+                      await submitFinancialsAction(formData);
+                    }} className="space-y-2">
+                      <input type="hidden" name="applicationId" value={app.id} />
+                      <div>
+                        <label className="block text-sm">Employment Type</label>
+                        <select name="employmentType" className="border p-2 rounded w-full" required>
+                          <option value="SALARIED">Salaried</option>
+                          <option value="SELF_EMPLOYED">Self Employed</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm">Employer Name</label>
+                        <input type="text" name="employerName" className="border p-2 rounded w-full" required />
+                      </div>
+                      <div>
+                        <label className="block text-sm">Designation</label>
+                        <input type="text" name="designation" className="border p-2 rounded w-full" required />
+                      </div>
+                      <div>
+                        <label className="block text-sm">Monthly Income</label>
+                        <input type="number" name="monthlyIncome" className="border p-2 rounded w-full" min="1" required />
+                      </div>
+                      <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                        Sync Credit Bureau & Submit
+                      </button>
+                    </form>
+                  </div>
+                )}
               </div>
             ))}
           </div>
