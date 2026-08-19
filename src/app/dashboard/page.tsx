@@ -21,6 +21,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
   const userApplications = await ApplicationService.getUserApplications(user.id)
 
+  const { loans } = await import('@/db/schema')
+  const userLoans = await db.select().from(loans).where(eq(loans.userId, user.id))
+  const loanMap = Object.fromEntries(userLoans.map(l => [l.applicationId, l]))
+
   // For each NOT_ELIGIBLE app, fetch the latest eligibility result so we can show reasons
   const eligibilityMap: Record<string, { reasons: string[]; decision: string } | null> = {}
   for (const app of userApplications) {
@@ -136,6 +140,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                 <div key={app.id} className="border p-4 rounded shadow bg-gray-800 text-white">
                   <p><strong>ID:</strong> {app.id}</p>
                   <p><strong>Status:</strong> {app.status}</p>
+                  {loanMap[app.id] && (
+                    <p><strong>Loan Status:</strong> <span className="text-blue-400 font-bold">{loanMap[app.id].status}</span></p>
+                  )}
                   {app.requestedAmount && (
                     <p><strong>Requested Amount:</strong> ₹{parseFloat(app.requestedAmount).toLocaleString('en-IN')}</p>
                   )}

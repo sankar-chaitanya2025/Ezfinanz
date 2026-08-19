@@ -27,18 +27,6 @@ async function enforceAdminRole() {
   return user.id
 }
 
-export async function claimApplicationAction(applicationId: string) {
-  try {
-    const adminUserId = await enforceAdminRole()
-    await AdminService.claimApplication(applicationId, adminUserId)
-    revalidatePath('/admin')
-    return { success: true }
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error occurred'
-    return { error: message }
-  }
-}
-
 export async function approveApplicationAction(applicationId: string) {
   try {
     const adminUserId = await enforceAdminRole()
@@ -56,6 +44,18 @@ export async function rejectApplicationAction(applicationId: string, formData: F
     const adminUserId = await enforceAdminRole()
     const reason = formData.get('reason') as string | undefined
     await AdminService.rejectApplication(applicationId, adminUserId, reason)
+    revalidatePath('/admin')
+    return { success: true }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error occurred'
+    return { error: message }
+  }
+}
+
+export async function confirmDisbursementAction(applicationId: string) {
+  try {
+    const adminUserId = await enforceAdminRole()
+    await AdminService.confirmDisbursement(applicationId, adminUserId)
     revalidatePath('/admin')
     return { success: true }
   } catch (error) {

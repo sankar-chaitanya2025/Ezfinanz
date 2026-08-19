@@ -137,7 +137,6 @@ describe('KycService', () => {
     await ApplicationService.transitionState(appA.id, 'DECLARATION_ACCEPTED', userA);
     await ApplicationService.transitionState(appA.id, 'SELFIE_PENDING', userA);
     await ApplicationService.transitionState(appA.id, 'SUBMITTED', userA);
-    await ApplicationService.transitionState(appA.id, 'UNDER_REVIEW', userA);
     await ApplicationService.transitionState(appA.id, 'REJECTED', userA);
 
     // User A creates a new app

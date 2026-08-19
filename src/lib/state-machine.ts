@@ -15,8 +15,8 @@ export const VALID_TRANSITIONS: Record<ApplicationState, ApplicationState[]> = {
   BANK_VERIFIED: ['DECLARATION_ACCEPTED'],
   DECLARATION_ACCEPTED: ['SELFIE_PENDING'],
   SELFIE_PENDING: ['SUBMITTED'],
-  SUBMITTED: ['UNDER_REVIEW'],
-  UNDER_REVIEW: ['APPROVED', 'REJECTED'],
+  SUBMITTED: ['APPROVED', 'REJECTED'],
+  UNDER_REVIEW: [], // Deprecated state, kept for backwards compatibility in type
   APPROVED: [], // Terminal application state (leads to active loan)
   REJECTED: [], // Terminal state
 }

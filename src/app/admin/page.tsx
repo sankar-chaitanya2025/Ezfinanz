@@ -1,5 +1,5 @@
 import { AdminService } from '@/services/adminService'
-import { claimApplicationAction, approveApplicationAction, rejectApplicationAction } from '@/app/actions/admin'
+import { approveApplicationAction, rejectApplicationAction } from '@/app/actions/admin'
 import { logout } from '@/app/actions/auth'
 import { createClient } from '@/utils/supabase/server'
 
@@ -30,29 +30,25 @@ export default async function AdminDashboardPage() {
       <div className="space-y-6">
         {appDetails.map((details) => {
           if (!details) return null
-          const { application: app, kyc, financial, eligibility, terms, bank, selfie, declaration } = details
-
-          const isClaimedByMe = app.reviewerId === adminId
-          const isClaimedByOther = app.reviewerId && app.reviewerId !== adminId
+          const { application: app, kyc, financial, eligibility, terms, bank, selfie, declaration, loan } = details
 
           return (
             <div key={app.id} className="bg-white p-6 rounded shadow border border-gray-200">
               <div className="flex justify-between border-b pb-4 mb-4">
                 <div>
-                  <h3 className="text-lg font-bold">Application ID: {app.id}</h3>
-                  <p><strong>Customer:</strong> {app.customerEmail}</p>
-                  <p><strong>Status:</strong> <span className="inline-block bg-gray-200 px-2 py-1 rounded text-sm">{app.status}</span></p>
-                  <p><strong>Created At:</strong> {new Date(app.createdAt).toLocaleString()}</p>
+                  <h3 className="text-lg font-bold">Applicant: {kyc?.fullName || app.customerEmail}</h3>
+                  <p><strong>Loan Requested:</strong> ₹{app.requestedAmount} for {app.requestedTenure} months</p>
+                  <p><strong>Current Stage:</strong> <span className="inline-block bg-gray-200 px-2 py-1 rounded text-sm font-semibold">{app.status}</span></p>
+                  <p><strong>Submission Time:</strong> {new Date(app.createdAt).toLocaleString()}</p>
                 </div>
                 <div className="text-right">
-                  <p><strong>Requested Amount:</strong> ₹{app.requestedAmount}</p>
-                  <p><strong>Requested Tenure:</strong> {app.requestedTenure} months</p>
-                  <p><strong>Assigned To:</strong> {app.reviewerId ? (isClaimedByMe ? 'You' : app.reviewerId) : 'Unassigned'}</p>
+                  {loan && (
+                    <p className="mb-2"><strong>Loan Status:</strong> <span className="text-blue-600 font-bold">{loan.status}</span></p>
+                  )}
                 </div>
               </div>
 
-              {/* Data Dump (Unpolished) */}
-              <div className="grid grid-cols-2 gap-4 text-sm mb-6">
+              <div className="grid grid-cols-2 gap-4 text-sm mb-4">
                 <div className="border p-2 bg-gray-50">
                   <h4 className="font-bold border-b mb-2">KYC Details</h4>
                   <pre className="whitespace-pre-wrap">{JSON.stringify(kyc, null, 2)}</pre>
@@ -62,18 +58,15 @@ export default async function AdminDashboardPage() {
                   <pre className="whitespace-pre-wrap">{JSON.stringify(financial, null, 2)}</pre>
                 </div>
                 <div className="border p-2 bg-gray-50">
-                  <h4 className="font-bold border-b mb-2">Latest Eligibility</h4>
-                  <pre className="whitespace-pre-wrap">{JSON.stringify(eligibility[0] || null, null, 2)}</pre>
+                  <h4 className="font-bold border-b mb-2">Eligibility & Terms</h4>
+                  <pre className="whitespace-pre-wrap">Eligibility: {JSON.stringify(eligibility, null, 2)}</pre>
+                  <pre className="whitespace-pre-wrap mt-2 border-t pt-2">Terms: {JSON.stringify(terms, null, 2)}</pre>
                 </div>
                 <div className="border p-2 bg-gray-50">
-                  <h4 className="font-bold border-b mb-2">Accepted Terms</h4>
-                  <pre className="whitespace-pre-wrap">{JSON.stringify(terms, null, 2)}</pre>
-                </div>
-                <div className="border p-2 bg-gray-50">
-                  <h4 className="font-bold border-b mb-2">Bank Verification</h4>
+                  <h4 className="font-bold border-b mb-2">Bank Details</h4>
                   <pre className="whitespace-pre-wrap">{JSON.stringify(bank, null, 2)}</pre>
                 </div>
-                <div className="border p-2 bg-gray-50">
+                <div className="border p-2 bg-gray-50 col-span-2">
                   <h4 className="font-bold border-b mb-2">Selfie & Declaration</h4>
                   {selfie?.storagePath ? (
                     <div className="mb-2 border p-1 bg-white inline-block">
@@ -90,47 +83,45 @@ export default async function AdminDashboardPage() {
                 </div>
               </div>
 
-              {/* Actions */}
-              <div className="flex gap-4 p-4 bg-gray-100 rounded">
+              <div className="flex gap-4 justify-end mt-4 border-t pt-4">
                 {app.status === 'SUBMITTED' && (
-                  <form action={async () => {
-                    'use server'
-                    await claimApplicationAction(app.id)
-                  }}>
-                    <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded font-bold">
-                      Claim Application
-                    </button>
-                  </form>
-                )}
-
-                {app.status === 'UNDER_REVIEW' && isClaimedByMe && (
                   <>
                     <form action={async () => {
                       'use server'
+                      const { approveApplicationAction } = await import('@/app/actions/admin')
                       await approveApplicationAction(app.id)
                     }}>
-                      <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded font-bold">
+                      <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded font-bold hover:bg-green-700">
                         Approve Application
                       </button>
                     </form>
 
                     <form action={async (formData) => {
                       'use server'
+                      const { rejectApplicationAction } = await import('@/app/actions/admin')
                       await rejectApplicationAction(app.id, formData)
                     }} className="flex gap-2">
                       <input type="text" name="reason" placeholder="Rejection reason..." className="border p-2 rounded" required />
-                      <button type="submit" className="bg-red-600 text-white px-4 py-2 rounded font-bold">
+                      <button type="submit" className="bg-red-600 text-white px-4 py-2 rounded font-bold hover:bg-red-700">
                         Reject
                       </button>
                     </form>
                   </>
                 )}
 
-                {app.status === 'UNDER_REVIEW' && isClaimedByOther && (
-                  <p className="text-gray-500 italic">This application is being reviewed by another admin.</p>
+                {app.status === 'APPROVED' && loan?.status === 'DISBURSEMENT_PENDING' && (
+                  <form action={async () => {
+                    'use server'
+                    const { confirmDisbursementAction } = await import('@/app/actions/admin')
+                    await confirmDisbursementAction(app.id)
+                  }}>
+                    <button type="submit" className="bg-purple-600 text-white px-4 py-2 rounded font-bold hover:bg-purple-700">
+                      Confirm Disbursement
+                    </button>
+                  </form>
                 )}
 
-                {(app.status === 'APPROVED' || app.status === 'REJECTED') && (
+                {(app.status === 'APPROVED' || app.status === 'REJECTED') && loan?.status !== 'DISBURSEMENT_PENDING' && (
                   <p className="text-gray-500 font-bold">Review Complete: {app.status}</p>
                 )}
               </div>
