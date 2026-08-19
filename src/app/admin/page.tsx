@@ -75,7 +75,17 @@ export default async function AdminDashboardPage() {
                 </div>
                 <div className="border p-2 bg-gray-50">
                   <h4 className="font-bold border-b mb-2">Selfie & Declaration</h4>
-                  <pre className="whitespace-pre-wrap">Selfie: {JSON.stringify(selfie, null, 2)}</pre>
+                  {selfie?.storagePath ? (
+                    <div className="mb-2 border p-1 bg-white inline-block">
+                      <img 
+                        src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/kyc-documents/${selfie.storagePath}`} 
+                        alt="Customer Selfie" 
+                        className="max-w-[200px] h-auto"
+                      />
+                    </div>
+                  ) : (
+                    <pre className="whitespace-pre-wrap">Selfie: {JSON.stringify(selfie, null, 2)}</pre>
+                  )}
                   <pre className="whitespace-pre-wrap mt-2 border-t pt-2">Decl: {JSON.stringify(declaration, null, 2)}</pre>
                 </div>
               </div>

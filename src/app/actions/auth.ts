@@ -21,6 +21,19 @@ export async function login(formData: FormData) {
     redirect('/login?error=Could+not+authenticate+user')
   }
 
+  // Fetch the user's role to route appropriately
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user) {
+    const { eq } = await import('drizzle-orm')
+    const [profile] = await db.select().from(users).where(eq(users.id, user.id)).limit(1)
+    
+    revalidatePath('/', 'layout')
+    
+    if (profile?.role === 'ADMIN') {
+      redirect('/admin')
+    }
+  }
+
   revalidatePath('/', 'layout')
   redirect('/dashboard')
 }
