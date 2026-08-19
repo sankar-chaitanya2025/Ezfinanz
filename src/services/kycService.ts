@@ -13,7 +13,7 @@ export class KycService {
    * Ensures the identity is not used by another user.
    * Updates application state based on the provider result.
    */
-  static async submitKyc(applicationId: string, userId: string, idType: IdType, plainIdNumber: string) {
+  static async submitKyc(applicationId: string, userId: string, idType: IdType, plainIdNumber: string, fullName?: string) {
     // 1. Verify ownership and state
     const [app] = await db.select()
       .from(applications)
@@ -33,12 +33,22 @@ export class KycService {
       await ApplicationService.transitionState(applicationId, 'KYC_PENDING', userId)
     }
 
+    const cleanIdNumber = plainIdNumber.trim().toUpperCase()
+
+    // Format Validation
+    if (idType === 'AADHAR' && !/^\d{12}$/.test(cleanIdNumber)) {
+      throw new Error('Invalid Aadhar format. Must be exactly 12 digits.')
+    }
+    if (idType === 'PAN' && !/^[A-Z]{5}\d{4}[A-Z]{1}$/.test(cleanIdNumber)) {
+      throw new Error('Invalid PAN format. Must be 5 letters, 4 numbers, and 1 letter (e.g. ABCDE1234F).')
+    }
+
     // 2. Hash and mask
-    const idHash = hashIdNumber(plainIdNumber)
-    const idMasked = maskIdNumber(plainIdNumber, idType)
+    const idHash = hashIdNumber(cleanIdNumber)
+    const idMasked = maskIdNumber(cleanIdNumber, idType)
 
     // 3. Call the external provider (DO NOT hold a DB transaction during network call)
-    const kycResult = await MockDigiLockerProvider.verifyId(idType, plainIdNumber)
+    const kycResult = await MockDigiLockerProvider.verifyId(idType, plainIdNumber, fullName)
 
     // 4. Perform the transactional deduplication and write
     await db.transaction(async (tx) => {

@@ -21,6 +21,7 @@ export class EligibilityEngine {
   private static readonly MIN_INCOME = 15000;
   private static readonly MIN_CREDIT_SCORE = 650;
   private static readonly ELIGIBLE_CREDIT_SCORE = 700;
+  private static readonly ABSOLUTE_MAX_LOAN_AMOUNT = 5000000; // ₹50 Lakhs limit for personal loans
 
   /**
    * Calculates the EMI for a given principal amount, annual interest rate, and tenure.
@@ -52,6 +53,16 @@ export class EligibilityEngine {
     // Basic Input Validation
     if (!facts.requestedAmount || facts.requestedAmount <= 0) {
       reasons.push('Requested amount must be greater than 0.');
+      return {
+        decision: 'NOT_ELIGIBLE',
+        maxEligibleAmount: 0,
+        calculatedDti: 0,
+        reasons,
+      };
+    }
+
+    if (facts.requestedAmount > this.ABSOLUTE_MAX_LOAN_AMOUNT) {
+      reasons.push(`Requested amount (₹${facts.requestedAmount.toLocaleString('en-IN')}) exceeds the maximum loan limit of ₹${this.ABSOLUTE_MAX_LOAN_AMOUNT.toLocaleString('en-IN')}.`);
       return {
         decision: 'NOT_ELIGIBLE',
         maxEligibleAmount: 0,

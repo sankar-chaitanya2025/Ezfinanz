@@ -18,13 +18,14 @@ export async function submitKycAction(formData: FormData) {
   const applicationId = formData.get('applicationId') as string
   const idType = formData.get('idType') as IdType
   const idNumber = formData.get('idNumber') as string
+  const fullName = formData.get('fullName') as string
 
   if (!applicationId || !idType || !idNumber) {
     return { error: 'Missing required fields' }
   }
 
   try {
-    const result = await KycService.submitKyc(applicationId, user.id, idType, idNumber)
+    const result = await KycService.submitKyc(applicationId, user.id, idType, idNumber, fullName)
     revalidatePath('/dashboard')
     
     if (result.status === 'FAILED') {

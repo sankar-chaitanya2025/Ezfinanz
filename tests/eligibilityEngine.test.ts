@@ -66,7 +66,7 @@ describe('EligibilityEngine - Pure Business Rules', () => {
     expect(result.reasons.some(r => r.includes('exceed or equal 50%'))).toBe(true);
   });
 
-  it('should return PARTIALLY_ELIGIBLE if requested amount exceeds max eligible amount', () => {
+  it('should return PARTIALLY_ELIGIBLE if requested amount exceeds max eligible amount but within absolute limits', () => {
     const result = EligibilityEngine.evaluate({ ...baseFacts, requestedAmount: 5000000 }); // 50 Lakhs
     expect(result.decision).toBe('PARTIALLY_ELIGIBLE');
     // For 50k income, max EMI = 25k - 10k = 15k
@@ -74,6 +74,12 @@ describe('EligibilityEngine - Pure Business Rules', () => {
     expect(result.maxEligibleAmount).toBeLessThan(5000000);
     expect(result.maxEligibleAmount).toBeGreaterThan(600000);
     expect(result.reasons.some(r => r.includes('exceeds maximum eligible amount'))).toBe(true);
+  });
+
+  it('should return NOT_ELIGIBLE if requested amount exceeds the absolute maximum loan limit', () => {
+    const result = EligibilityEngine.evaluate({ ...baseFacts, requestedAmount: 200000000 }); // 20 Crores
+    expect(result.decision).toBe('NOT_ELIGIBLE');
+    expect(result.reasons.some(r => r.includes('exceeds the maximum loan limit'))).toBe(true);
   });
 
   it('should correctly calculate deterministic PV and EMI', () => {

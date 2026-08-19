@@ -170,9 +170,17 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                       await submitKycAction(formData);
                     }} className="mt-4 p-4 border border-gray-600 rounded bg-gray-900 space-y-2">
                       <h3 className="font-semibold text-lg">Step 1: Verify Identity (KYC)</h3>
-                      <p className="text-sm text-gray-400">
-                        ID tip: use <code className="bg-gray-700 px-1 rounded">ABCD1234</code> for a good credit score (780).
-                        IDs starting with <code className="bg-gray-700 px-1 rounded">f</code> after hashing give score 520 (blocked).
+                      <p className="text-sm text-gray-400 mb-2">
+                        <strong>PAN Tips:</strong> Use <code className="bg-gray-700 px-1 rounded">ABCDE1000F</code> for Good Score (780).
+                        Use <code className="bg-gray-700 px-1 rounded">ABCDE1012F</code> for Medium (680). 
+                        Use <code className="bg-gray-700 px-1 rounded">ABCDE1002F</code> for Low (520).
+                        Use <code className="bg-gray-700 px-1 rounded">FAILP1234F</code> to simulate KYC failure.
+                        <br/>
+                        <strong>Aadhar Tips:</strong> Must be exactly 12 digits.
+                        <code className="bg-gray-700 px-1 rounded">100000000000</code> (Good), 
+                        <code className="bg-gray-700 px-1 rounded">100000000008</code> (Medium), 
+                        <code className="bg-gray-700 px-1 rounded">100000000031</code> (Low). 
+                        Use <code className="bg-gray-700 px-1 rounded">000012345678</code> to simulate failure.
                       </p>
                       <input type="hidden" name="applicationId" value={app.id} />
                       <div>
@@ -181,6 +189,15 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                           <option value="AADHAR">Aadhar</option>
                           <option value="PAN">PAN</option>
                         </select>
+                      </div>
+                      <div>
+                        <input
+                          type="text"
+                          name="fullName"
+                          placeholder="Enter your Full Name (as per ID)"
+                          required
+                          className="w-full p-2 rounded text-black bg-white border border-gray-300"
+                        />
                       </div>
                       <div>
                         <input

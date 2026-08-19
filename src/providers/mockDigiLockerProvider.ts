@@ -18,14 +18,15 @@ export class MockDigiLockerProvider {
    * Deterministic mock: ID containing "FAIL" will return FAILED.
    * Otherwise returns VERIFIED with dummy data.
    */
-  static async verifyId(idType: IdType, idNumber: string): Promise<KycResponse> {
+  static async verifyId(idType: IdType, idNumber: string, providedName?: string): Promise<KycResponse> {
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 800))
 
     const cleanId = idNumber.trim().toUpperCase()
     const providerReference = `MOCK-DL-${crypto.randomUUID()}`
 
-    if (cleanId.includes('FAIL')) {
+    // Deterministic failure: Aadhar starting with '0000' or PAN starting with 'FAIL'
+    if (cleanId.startsWith('0000') || cleanId.startsWith('FAIL')) {
       return {
         status: 'FAILED',
         providerReference
@@ -35,7 +36,7 @@ export class MockDigiLockerProvider {
     return {
       status: 'VERIFIED',
       providerReference,
-      fullName: 'John Doe',
+      fullName: providedName || 'John Doe',
       dob: '1990-01-01',
       gender: 'MALE',
       address: '123 Fake Street, Mock City, 110001'

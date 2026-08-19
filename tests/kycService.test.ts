@@ -83,7 +83,7 @@ describe('KycService', () => {
     const app = await ApplicationService.createApplication(userId);
     
     // First attempt fails
-    const result = await KycService.submitKyc(app.id, userId, 'AADHAR', 'FAIL12345678');
+    const result = await KycService.submitKyc(app.id, userId, 'AADHAR', '000012345678');
     expect(result.status).toBe('FAILED');
 
     // Check DB
