@@ -141,7 +141,18 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                   <p><strong>ID:</strong> {app.id}</p>
                   <p><strong>Status:</strong> {app.status}</p>
                   {loanMap[app.id] && (
-                    <p><strong>Loan Status:</strong> <span className="text-blue-400 font-bold">{loanMap[app.id].status}</span></p>
+                    <div className="mt-1 text-sm space-y-0.5">
+                      <p><strong>Loan Status:</strong> <span className="text-blue-400 font-bold">{loanMap[app.id].status}</span></p>
+                      {loanMap[app.id].sanctionedAmount && (
+                        <p><strong>Sanctioned Amount:</strong> ₹{parseFloat(loanMap[app.id].sanctionedAmount).toLocaleString('en-IN')}</p>
+                      )}
+                      {loanMap[app.id].disbursedAmount && (
+                        <p><strong>Disbursed Amount:</strong> <span className="text-green-400 font-bold">₹{parseFloat(loanMap[app.id].disbursedAmount!).toLocaleString('en-IN')}</span></p>
+                      )}
+                      {loanMap[app.id].disbursedAt && (
+                        <p><strong>Disbursed On:</strong> {new Date(loanMap[app.id].disbursedAt!).toLocaleString()}</p>
+                      )}
+                    </div>
                   )}
                   {app.requestedAmount && (
                     <p><strong>Requested Amount:</strong> ₹{parseFloat(app.requestedAmount).toLocaleString('en-IN')}</p>
@@ -353,7 +364,15 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                       <form action={async (formData) => {
                         'use server';
                         const { submitBankVerificationAction } = await import('@/app/actions/bankVerification');
-                        await submitBankVerificationAction(app.id, formData);
+                        const result = await submitBankVerificationAction(app.id, formData);
+                        if (!result.success || result.error) {
+                          const { redirect } = await import('next/navigation');
+                          redirect('/dashboard?error=' + encodeURIComponent(result.error || 'Bank verification failed'));
+                        }
+                        if (result.result?.status === 'FAILED') {
+                          const { redirect } = await import('next/navigation');
+                          redirect('/dashboard?error=' + encodeURIComponent('Bank account verification was rejected. Please check your details and try again.'));
+                        }
                       }} className="space-y-2">
                         <div>
                           <label className="block text-sm">Account Number (9–18 digits)</label>

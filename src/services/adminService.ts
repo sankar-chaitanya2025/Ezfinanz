@@ -12,6 +12,7 @@ export class AdminService {
       id: applications.id,
       status: applications.status,
       createdAt: applications.createdAt,
+      submittedAt: applications.submittedAt,
       requestedAmount: applications.requestedAmount,
       requestedTenure: applications.requestedTenure,
       reviewerId: applications.reviewerId,
@@ -31,9 +32,11 @@ export class AdminService {
       id: applications.id,
       status: applications.status,
       createdAt: applications.createdAt,
+      submittedAt: applications.submittedAt,
       requestedAmount: applications.requestedAmount,
       requestedTenure: applications.requestedTenure,
       reviewerId: applications.reviewerId,
+      reviewTimestamp: applications.reviewTimestamp,
       customerEmail: users.email,
     })
     .from(applications)

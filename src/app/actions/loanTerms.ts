@@ -30,6 +30,7 @@ export async function generateAndAcceptTermsAction(formData: FormData) {
   try {
     await LoanTermsService.generateAndAcceptTerms(applicationId, user.id, requestedAmount, requestedTenure)
     revalidatePath('/dashboard')
+    return { success: true }
   } catch (error) {
     if (error instanceof Error) {
       return { error: error.message }

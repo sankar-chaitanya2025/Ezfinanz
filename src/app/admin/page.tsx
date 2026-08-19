@@ -1,12 +1,10 @@
 import { AdminService } from '@/services/adminService'
-import { approveApplicationAction, rejectApplicationAction } from '@/app/actions/admin'
 import { logout } from '@/app/actions/auth'
 import { createClient } from '@/utils/supabase/server'
 
 export default async function AdminDashboardPage() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  const adminId = user?.id
+  await supabase.auth.getUser()
 
   const applications = await AdminService.getReviewableApplications()
   
@@ -39,7 +37,7 @@ export default async function AdminDashboardPage() {
                   <h3 className="text-lg font-bold">Applicant: {kyc?.fullName || app.customerEmail}</h3>
                   <p><strong>Loan Requested:</strong> ₹{app.requestedAmount} for {app.requestedTenure} months</p>
                   <p><strong>Current Stage:</strong> <span className="inline-block bg-gray-200 px-2 py-1 rounded text-sm font-semibold">{app.status}</span></p>
-                  <p><strong>Submission Time:</strong> {new Date(app.createdAt).toLocaleString()}</p>
+                  <p><strong>Submission Time:</strong> {app.submittedAt ? new Date(app.submittedAt).toLocaleString() : '—'}</p>
                 </div>
                 <div className="text-right">
                   {loan && (

@@ -21,6 +21,7 @@ export async function evaluateEligibilityAction(formData: FormData) {
   try {
     await EligibilityService.evaluateEligibility(applicationId, user.id)
     revalidatePath('/dashboard')
+    return { success: true }
   } catch (error) {
     if (error instanceof Error) {
       return { error: error.message }

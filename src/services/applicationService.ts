@@ -88,11 +88,16 @@ export class ApplicationService {
       }
 
       // 3. Update application status
+      const updateFields: Record<string, unknown> = {
+        status: newState,
+        updatedAt: new Date()
+      }
+      // Record the exact moment the application was formally submitted
+      if (newState === 'SUBMITTED') {
+        updateFields.submittedAt = new Date()
+      }
       const [updatedApp] = await tx.update(applications)
-        .set({ 
-          status: newState,
-          updatedAt: new Date()
-        })
+        .set(updateFields)
         .where(eq(applications.id, applicationId))
         .returning()
 
