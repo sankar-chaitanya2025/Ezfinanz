@@ -59,7 +59,15 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       )}
       
       <div>
-        <h1 className="text-2xl font-bold mb-4">Dashboard (Test)</h1>
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-bold">Dashboard (Test)</h1>
+
+          {profile?.role === 'ADMIN' && (
+             <a href="/admin" className="bg-purple-600 text-white px-3 py-1 rounded text-sm font-semibold hover:bg-purple-700">
+               Go to Admin Dashboard
+             </a>
+          )}
+        </div>
         <div className="bg-white text-black border p-4 rounded mb-4 shadow">
           <p><strong>Email:</strong> {user.email}</p>
           <p><strong>Auth ID:</strong> {user.id}</p>

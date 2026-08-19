@@ -64,30 +64,3 @@ export async function rejectApplicationAction(applicationId: string, formData: F
   }
 }
 
-/**
- * Development-only action to promote current user to ADMIN.
- */
-export async function promoteToAdminAction() {
-  if (process.env.NODE_ENV !== 'development') {
-    return { error: 'This action is only available in development mode.' }
-  }
-
-  try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return { error: 'Not authenticated' }
-    }
-
-    await db.update(users)
-      .set({ role: 'ADMIN' })
-      .where(eq(users.id, user.id))
-
-    revalidatePath('/')
-    return { success: true }
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error occurred'
-    return { error: message }
-  }
-}
