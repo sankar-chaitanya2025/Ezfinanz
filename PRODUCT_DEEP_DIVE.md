@@ -25,12 +25,12 @@ Here is the exact journey from the user's perspective:
 2. **Dashboard**: User clicks "Start New Application". The app enters the `DRAFT` state.
 3. **KYC Verification (`KYC_PENDING` → `KYC_COMPLETED`)**: User verifies identity. In this V1, we simulate a DigiLocker integration to fetch PAN/Aadhar details securely.
 4. **Financials (`FINANCIALS_COMPLETED`)**: User connects their bank account. We simulate an Account Aggregator (AA) framework to pull their salary, existing EMIs, and credit score.
-5. **AI Eligibility (`ELIGIBILITY_PENDING` → `ELIGIBLE` / `NOT_ELIGIBLE`)**: The system feeds the KYC and Financial data into a Gemini AI model. The AI acts as the underwriter, calculating the Debt-to-Income (DTI) ratio and deciding the maximum eligible amount.
+5. **Eligibility Assessment (`ELIGIBILITY_PENDING` → `ELIGIBLE` / `NOT_ELIGIBLE`)**: The system feeds the KYC and Financial data into our internal `EligibilityEngine`. The engine acts as an algorithmic underwriter, calculating the Debt-to-Income (DTI) ratio, validating the credit score, and deciding the maximum eligible loan amount based on strict financial rules.
 6. **Loan Terms (`TERMS_SELECTED`)**: The user selects their desired tenure (e.g., 12, 24, 36 months). The system calculates the exact EMI, interest, and processing fees.
 7. **Bank Verification (`BANK_VERIFIED`)**: We simulate a "Penny Drop" verification to ensure the bank account belongs to the user and is active.
 8. **Final Declaration (`DECLARATION_ACCEPTED`)**: The user accepts the legal terms and conditions.
 9. **Selfie Verification (`SELFIE_PENDING` → `SUBMITTED`)**: An anti-fraud measure. The user uploads a live selfie to match against their KYC photo.
-10. **Admin Review (`UNDER_REVIEW` → `APPROVED` / `REJECTED`)**: The application lands in the Admin Queue. An admin reviews the AI's assessment and the user's data, making the final call.
+10. **Admin Review (`UNDER_REVIEW` → `APPROVED` / `REJECTED`)**: The application lands in the Admin Queue. An admin reviews the algorithmic assessment and the user's verified data, making the final call.
 
 ---
 
@@ -44,7 +44,6 @@ EZFinanz is built on a modern, serverless-first stack designed for high iteratio
 *   **Authentication**: Supabase Auth
 *   **Styling & UI**: Tailwind CSS, Shadcn UI, Lucide Icons
 *   **Animations**: GSAP, React Three Fiber (ShaderGradients)
-*   **AI Engine**: Google Gemini (via `@google/genai`)
 
 ### High-Level Request Flow
 1. **Client** calls a **Server Action** (e.g., `submitKycAction`).
@@ -68,9 +67,9 @@ EZFinanz is built on a modern, serverless-first stack designed for high iteratio
 *   **Why?** Real banking APIs (DigiLocker, Setu/Onemoney for Account Aggregators, Penny Drop APIs) require rigorous compliance, business registrations, and paid API keys. We wanted to build the entire product end-to-end without being blocked by third parties.
 *   **How?** We used the Strategy Pattern. We defined strict TypeScript interfaces (e.g., `IKycProvider`). Our `MockDigilockerProvider` implements this interface. When the startup gets regulatory approval, we just swap the mock class for a `RealDigilockerProvider` without changing a single line of business logic.
 
-### Decision 4: Gemini AI for Risk Assessment
-*   **Why AI instead of a rigid math formula?** Traditional underwriting uses strict rules (e.g., `if credit_score < 700 then reject`). AI allows for nuanced risk assessment. For example, if a user has a low credit score but their salary just doubled and they have zero existing EMIs, the AI can flag them as "Partially Eligible" rather than an outright rejection. 
-*   **Safety net**: The AI doesn't have the final say on actual money disbursement—it flags the application for the human Admin to review. We also enforce structured JSON output from Gemini to ensure the backend doesn't crash parsing the AI's response.
+### Decision 4: Deterministic Algorithmic Underwriting (`EligibilityEngine`)
+*   **Why algorithms instead of black-box AI?** Traditional underwriting uses strict rules to ensure fair lending practices and auditability. By using a pure TypeScript engine (`EligibilityEngine`) instead of an AI model, we guarantee 100% deterministic outcomes. If two users have the same salary and credit score, they get the exact same decision, every single time.
+*   **The Logic**: We evaluate a strict set of rules (minimum income of ₹15,000, minimum credit score of 650, maximum DTI of 50%). If a user fails any rule, the engine returns `NOT_ELIGIBLE` with a specific array of reasons. The backend strictly enforces this logic without external network calls, making the process blazing fast and secure.
 
 ### Decision 5: Drizzle ORM over Prisma
 *   **Why?** Prisma abstracts SQL away heavily, which is great for beginners but bad for complex, optimized queries. Drizzle ORM provides a SQL-like syntax that is 100% type-safe. It also runs flawlessly on Edge runtimes, whereas Prisma historically struggled with connection pooling on serverless.
@@ -108,8 +107,8 @@ The database is highly normalized. The anchor of the system is the `applications
 
 If this app scales to 100,000 concurrent users, here is what will break and how we'd fix it:
 
-1. **AI Bottleneck**: Calling Gemini synchronously during the application flow means the user is staring at a loading spinner for 3-5 seconds. 
-   * *Fix*: Move the AI evaluation to a background queue (e.g., Inngest or AWS SQS). The user goes to a "Processing..." screen, and we use Server-Sent Events (SSE) or WebSockets to notify them when the AI is done.
+1. **Database Connection Limits**: In a serverless environment, Next.js could spin up thousands of concurrent lambdas, exhausting the Supabase connection pool. 
+   * *Fix*: Ensure we are strictly using the PgBouncer connection pooler URL (port 6543) provided by Supabase in production, rather than the direct connection URL.
 2. **Admin Queue N+1 Queries**: Currently, the Admin dashboard fetches applications and then loops through them to fetch detailed KYC/Financial data. 
    * *Fix*: Write a complex SQL `JOIN` in Drizzle to fetch the queue and its associated data in a single query.
 3. **Idempotency**: If a user double-clicks the "Submit" button, Server Actions might trigger twice. 
@@ -118,4 +117,4 @@ If this app scales to 100,000 concurrent users, here is what will break and how 
 ---
 
 ## Conclusion
-EZFinanz is a highly structured, scalable, and visually stunning lending platform. By leveraging Next.js Server Actions for tight frontend/backend coupling, a strict State Machine for security, and AI for nuanced underwriting, it represents a modern approach to fintech engineering.
+EZFinanz is a highly structured, scalable, and visually stunning lending platform. By leveraging Next.js Server Actions for tight frontend/backend coupling, a strict State Machine for security, and a deterministic Eligibility Engine for algorithmic underwriting, it represents a modern approach to fintech engineering.
