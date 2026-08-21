@@ -75,7 +75,7 @@ function StaticFallback({ className }: { className: string }) {
   return <div className={className} style={FALLBACK_GRADIENT_STYLE} aria-hidden="true" />;
 }
 
-export default function HeroShaderGradient() {
+export default function HeroShaderGradient({ className }: { className?: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [mounted, setMounted] = useState(false);
@@ -85,7 +85,7 @@ export default function HeroShaderGradient() {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
-  const wrapperClassName = 'relative h-[420px] w-full overflow-hidden rounded-3xl md:h-[560px]';
+  const wrapperClassName = className || 'relative h-[420px] w-full overflow-hidden rounded-3xl md:h-[560px]';
 
   // Runs once, client-only. Until this flips true, we render nothing
   // dynamic — avoids hydration mismatch and confirms we're in the browser

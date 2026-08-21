@@ -15,8 +15,6 @@ import {
 
 gsap.registerPlugin(ScrollTrigger);
 
-type StepIndex = 0 | 1 | 2 | 3;
-
 const steps = [
   {
     title: 'Bank Sync',
@@ -40,12 +38,14 @@ const steps = [
   },
 ] as const;
 
-const statusMessages = [
-  'Securely connecting your bank',
-  'Confirming your identity',
-  'Evaluating your application',
-  'Decision ready',
-] as const;
+type StepIndex = 0 | 1 | 2 | 3;
+
+const statusMessages: Record<StepIndex, string> = {
+  0: 'Awaiting bank verification',
+  1: 'Bank synced. Awaiting selfie',
+  2: 'Verifying identity & eligibility',
+  3: 'Decision ready',
+};
 
 export function HowItWorksSection() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -228,7 +228,7 @@ export function HowItWorksSection() {
       className="overflow-hidden bg-white py-24 md:py-32"
       aria-labelledby="flow-title"
     >
-      <div className="mx-auto max-w-6xl px-6">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="flow-intro mx-auto max-w-2xl text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600">
             How it works

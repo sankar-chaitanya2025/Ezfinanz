@@ -4,8 +4,15 @@ import { db } from '@/db'
 import { users, eligibilityResults } from '@/db/schema'
 import { eq, desc } from 'drizzle-orm'
 import { logout } from '@/app/actions/auth'
-
 import { ApplicationService } from '@/services/applicationService'
+import { EmiTermSelector } from '@/components/dashboard/EmiTermSelector'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import { AlertCircle, AlertTriangle, Banknote, Camera, CheckCircle, CheckCircle2, FileText, ShieldCheck, User } from 'lucide-react'
+import { UserNav } from '@/components/layout/UserNav'
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const supabase = await createClient()
@@ -54,432 +61,451 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const hasActiveApplication = userApplications.some(a => IN_PROGRESS_STATES.includes(a.status))
 
   return (
-    <div className="p-8 space-y-8 max-w-4xl mx-auto">
-      {errorParam && (
-        <div className="bg-red-50 border border-red-300 text-red-700 px-4 py-3 rounded mb-4">
-          <strong className="font-bold">Error: </strong>
-          <span className="block sm:inline">{errorParam}</span>
-        </div>
-      )}
-      
-      <div>
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold">Dashboard (Test)</h1>
+    <div className="min-h-screen bg-zinc-50 pb-24">
+      {/* Header */}
+      <UserNav theme="light" />
 
-          {profile?.role === 'ADMIN' && (
-             <a href="/admin" className="bg-purple-600 text-white px-3 py-1 rounded text-sm font-semibold hover:bg-purple-700">
-               Go to Admin Dashboard
-             </a>
-          )}
-        </div>
-        <div className="bg-white text-black border p-4 rounded mb-4 shadow">
-          <p><strong>Email:</strong> {user.email}</p>
-          <p><strong>Auth ID:</strong> {user.id}</p>
-          <p><strong>Role:</strong> {profile?.role || 'UNKNOWN'}</p>
-        </div>
-        <form action={logout}>
-          <button className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded" type="submit">
-            Log Out
-          </button>
-        </form>
-      </div>
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 space-y-8">
+        {errorParam && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />
+            <div>
+              <strong className="font-bold block">Error</strong>
+              <span className="text-sm">{errorParam}</span>
+            </div>
+          </div>
+        )}
+        
 
-      <div>
-        <div className="mb-8">
-          <h2 className="text-xl font-bold mb-4">Your Applications</h2>
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight mb-6">Your Applications</h2>
 
           {!hasActiveApplication && (
-            <div className="p-6 border border-gray-300 rounded bg-gray-50 text-black shadow-sm mb-6">
-              <h3 className="font-semibold text-lg border-b pb-2 mb-4">Start New Application</h3>
-              <form action={async (formData) => {
-                'use server';
-                const { createApplicationAction } = await import('@/app/actions/application');
-                const result = await createApplicationAction(formData);
-                if (result?.error) {
-                  const { redirect } = await import('next/navigation');
-                  redirect('/dashboard?error=' + encodeURIComponent(result.error));
-                }
-              }} className="flex flex-col gap-4">
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Requested Amount (₹)</label>
-                    <input type="number" name="requestedAmount" placeholder="e.g. 500000" className="border border-gray-300 p-2 rounded w-full" required />
+            <Card className="border-zinc-200 shadow-sm mb-8 bg-white">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Banknote className="w-5 h-5 text-indigo-600" /> Start New Application
+                </CardTitle>
+                <CardDescription>Request a new loan up to ₹5,00,000</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form action={async (formData) => {
+                  'use server';
+                  const { createApplicationAction } = await import('@/app/actions/application');
+                  const result = await createApplicationAction(formData);
+                  if (result?.error) {
+                    const { redirect } = await import('next/navigation');
+                    redirect('/dashboard?error=' + encodeURIComponent(result.error));
+                  }
+                }} className="space-y-4">
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1 space-y-2">
+                      <Label htmlFor="requestedAmount">Requested Amount (₹)</Label>
+                      <Input id="requestedAmount" type="number" name="requestedAmount" placeholder="e.g. 500000" required />
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <Label htmlFor="requestedTenure">Tenure (Months)</Label>
+                      <select name="requestedTenure" id="requestedTenure" className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" required defaultValue={60}>
+                        <option value="12">12 Months</option>
+                        <option value="24">24 Months</option>
+                        <option value="36">36 Months</option>
+                        <option value="48">48 Months</option>
+                        <option value="60">60 Months</option>
+                      </select>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Tenure (Months)</label>
-                    <select name="requestedTenure" className="border border-gray-300 p-2 rounded w-full" required defaultValue={60}>
-                      <option value="12">12 Months</option>
-                      <option value="24">24 Months</option>
-                      <option value="36">36 Months</option>
-                      <option value="48">48 Months</option>
-                      <option value="60">60 Months</option>
-                    </select>
-                  </div>
-                </div>
-                <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded self-start mt-2 font-medium" type="submit">
-                  Create New Application
-                </button>
-              </form>
+                  <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white w-full sm:w-auto">
+                    Create New Application
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          )}
+
+          {userApplications.length === 0 ? (
+            <div className="text-center py-12 border-2 border-dashed border-zinc-200 rounded-xl">
+              <FileText className="w-12 h-12 text-zinc-300 mx-auto mb-3" />
+              <p className="text-zinc-500 font-medium">No applications found.</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {userApplications.map(app => {
+                const eligibility = eligibilityMap[app.id]
+                const reasons: string[] = eligibility?.reasons ?? []
+                const creditScoreBlocked = reasons.some(r =>
+                  r.toLowerCase().includes('credit score') && r.toLowerCase().includes('below')
+                )
+
+                return (
+                  <Card key={app.id} className="border-zinc-200 shadow-sm overflow-hidden bg-white">
+                    <div className="bg-zinc-50 border-b border-zinc-100 p-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge variant="outline" className="font-mono text-[10px] uppercase text-zinc-500">{app.id.split('-')[0]}</Badge>
+                          <Badge className="bg-zinc-900 hover:bg-zinc-800">{app.status.replace(/_/g, ' ')}</Badge>
+                        </div>
+                        <p className="text-xs text-zinc-500">Created on {new Date(app.createdAt).toLocaleDateString()}</p>
+                      </div>
+                      
+                      {app.requestedAmount && (
+                        <div className="text-left sm:text-right">
+                          <p className="text-sm font-semibold text-zinc-900">₹{parseFloat(app.requestedAmount).toLocaleString('en-IN')}</p>
+                          <p className="text-xs text-zinc-500">{app.requestedTenure} months</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {loanMap[app.id] && (
+                      <div className="bg-indigo-50/50 border-b border-indigo-100 p-4 sm:px-6">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-800 mb-2">Loan Details</h4>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                          <div>
+                            <p className="text-indigo-600/70 text-xs">Status</p>
+                            <p className="font-semibold text-indigo-900">{loanMap[app.id].status}</p>
+                          </div>
+                          {loanMap[app.id].sanctionedAmount && (
+                            <div>
+                              <p className="text-indigo-600/70 text-xs">Sanctioned</p>
+                              <p className="font-semibold text-indigo-900">₹{parseFloat(loanMap[app.id].sanctionedAmount!).toLocaleString('en-IN')}</p>
+                            </div>
+                          )}
+                          {loanMap[app.id].disbursedAmount && (
+                            <div>
+                              <p className="text-indigo-600/70 text-xs">Disbursed</p>
+                              <p className="font-bold text-emerald-600">₹{parseFloat(loanMap[app.id].disbursedAmount!).toLocaleString('en-IN')}</p>
+                            </div>
+                          )}
+                          {loanMap[app.id].disbursedAt && (
+                            <div>
+                              <p className="text-indigo-600/70 text-xs">Date</p>
+                              <p className="font-semibold text-indigo-900">{new Date(loanMap[app.id].disbursedAt!).toLocaleDateString()}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    <CardContent className="p-4 sm:p-6">
+                      {/* ── STEP 1: KYC ── */}
+                      {(app.status === 'DRAFT' || app.status === 'KYC_PENDING') && (
+                        <div className="border border-zinc-200 rounded-2xl p-6 bg-white shadow-sm">
+                          <h3 className="font-bold text-lg text-zinc-900 mb-2">Step 1: Verify Identity (KYC)</h3>
+                          <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-100 text-sm text-zinc-600 mb-6 space-y-2">
+                            <p><strong>PAN Tips:</strong> Use <code className="bg-zinc-200 px-1.5 py-0.5 rounded text-zinc-900">ABCDE1000F</code> for Good Score. Use <code className="bg-zinc-200 px-1.5 py-0.5 rounded text-zinc-900">FAILP1234F</code> to simulate failure.</p>
+                            <p><strong>Aadhar Tips:</strong> Must be exactly 12 digits. Use <code className="bg-zinc-200 px-1.5 py-0.5 rounded text-zinc-900">100000000000</code> for Good Score. Use <code className="bg-zinc-200 px-1.5 py-0.5 rounded text-zinc-900">000012345678</code> to simulate failure.</p>
+                          </div>
+                          
+                          <form action={async (formData) => {
+                            'use server';
+                            const { submitKycAction } = await import('@/app/actions/kyc');
+                            await submitKycAction(formData);
+                          }} className="space-y-4 max-w-md">
+                            <input type="hidden" name="applicationId" value={app.id} />
+                            <div className="space-y-2">
+                              <Label>ID Type</Label>
+                              <select name="idType" required className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+                                <option value="AADHAR">Aadhar</option>
+                                <option value="PAN">PAN</option>
+                              </select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Full Name (as per ID)</Label>
+                              <Input type="text" name="fullName" placeholder="John Doe" required />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>ID Number</Label>
+                              <Input type="text" name="idNumber" placeholder="ABCD1234" required />
+                            </div>
+                            <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white">
+                              Submit KYC
+                            </Button>
+                          </form>
+                        </div>
+                      )}
+
+                      {/* ── STEP 2: Financial Details ── */}
+                      {(app.status === 'KYC_COMPLETED' || app.status === 'NOT_ELIGIBLE') && (
+                        <div className="border border-blue-100 rounded-2xl p-6 bg-blue-50/30">
+                          {app.status === 'NOT_ELIGIBLE' && (
+                            <div className="mb-6 p-4 rounded-xl border border-red-200 bg-red-50">
+                              <p className="font-semibold text-red-800 mb-2 flex items-center gap-2">
+                                <AlertTriangle className="w-4 h-4" /> Not Eligible — Reason(s):
+                              </p>
+                              {reasons.length > 0 ? (
+                                <ul className="list-disc list-inside text-sm text-red-700 space-y-1 ml-1">
+                                  {reasons.map((r, i) => <li key={i}>{r}</li>)}
+                                </ul>
+                              ) : (
+                                <p className="text-sm text-red-700">No reason recorded.</p>
+                              )}
+
+                              {creditScoreBlocked && (
+                                <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-900 text-sm">
+                                  <strong className="block mb-1">⚠ Credit score is below the minimum (650).</strong>
+                                  This cannot be fixed by updating your income or amount. Your credit score is determined by your KYC ID via the bureau. To test with a good score, create a new application and use ID <strong>ABCD1234</strong> for KYC.
+                                  
+                                  <form action={async () => {
+                                    'use server';
+                                    const { abandonApplicationAction } = await import('@/app/actions/abandon');
+                                    await abandonApplicationAction(app.id);
+                                  }} className="mt-4">
+                                    <Button variant="destructive" size="sm" type="submit">
+                                      Abandon Application & Start Fresh
+                                    </Button>
+                                  </form>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          <h3 className="font-bold text-lg text-zinc-900 mb-1">
+                            {app.status === 'NOT_ELIGIBLE' ? 'Step 2 (Retry): Correct Financial Details' : 'Step 2: Submit Financial Details'}
+                          </h3>
+                          <p className="text-sm text-zinc-500 mb-6">
+                            This will sync with the credit bureau and automatically evaluate your eligibility.
+                          </p>
+
+                          <form action={async (formData) => {
+                            'use server';
+                            const { submitFinancialsAction } = await import('@/app/actions/financials');
+                            await submitFinancialsAction(formData);
+                          }} className="space-y-4 max-w-md">
+                            <input type="hidden" name="applicationId" value={app.id} />
+                            
+                            <div className="space-y-2">
+                              <Label>Employment Type</Label>
+                              <select name="employmentType" className="flex h-9 w-full rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" required>
+                                <option value="SALARIED">Salaried</option>
+                                <option value="SELF_EMPLOYED">Self Employed</option>
+                              </select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Employer Name</Label>
+                              <Input type="text" name="employerName" className="bg-white" required />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Designation</Label>
+                              <Input type="text" name="designation" className="bg-white" required />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Monthly Income (₹)</Label>
+                              <Input type="number" name="monthlyIncome" className="bg-white" min="15001" placeholder="Minimum ₹15,000" required />
+                            </div>
+                            
+                            {app.status === 'NOT_ELIGIBLE' && (
+                              <div className="pt-4 mt-4 border-t border-blue-100 space-y-4">
+                                <div className="space-y-2">
+                                  <Label>Updated Requested Amount (₹)</Label>
+                                  <Input type="number" name="correctedRequestedAmount" defaultValue={app.requestedAmount ? parseFloat(app.requestedAmount) : undefined} className="bg-white" required />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Updated Tenure (Months)</Label>
+                                  <select name="correctedRequestedTenure" className="flex h-9 w-full rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" required defaultValue={app.requestedTenure ?? 60}>
+                                    {[12, 24, 36, 48, 60].map(t => (
+                                      <option key={t} value={t}>{t} Months</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </div>
+                            )}
+                            
+                            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white mt-2">
+                              Sync Credit Bureau & Evaluate
+                            </Button>
+                          </form>
+                        </div>
+                      )}
+
+                      {/* ── STEP 3 (fallback) ── */}
+                      {app.status === 'FINANCIALS_COMPLETED' && (
+                        <div className="border border-indigo-100 rounded-2xl p-6 bg-indigo-50/50">
+                          <h3 className="font-bold text-lg text-zinc-900 mb-1">Evaluate Eligibility</h3>
+                          <p className="text-sm text-zinc-500 mb-4">Financial details saved. Click below to run the eligibility engine.</p>
+                          <form action={async (formData) => {
+                            'use server';
+                            const { evaluateEligibilityAction } = await import('@/app/actions/eligibility');
+                            await evaluateEligibilityAction(formData);
+                          }}>
+                            <input type="hidden" name="applicationId" value={app.id} />
+                            <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                              Run Eligibility Engine
+                            </Button>
+                          </form>
+                        </div>
+                      )}
+
+                      {/* ── STEP 4: Select Loan Terms ── */}
+                      {(app.status === 'ELIGIBLE' || app.status === 'PARTIALLY_ELIGIBLE') && (
+                        <div className="border border-emerald-100 rounded-2xl p-6 bg-white shadow-sm">
+                          <div className="mb-6">
+                            <h3 className="font-bold text-lg text-zinc-900 mb-1 flex items-center gap-2">
+                              {app.status === 'ELIGIBLE' ? (
+                                <><CheckCircle className="w-5 h-5 text-emerald-600" /> Eligible!</>
+                              ) : (
+                                <><AlertCircle className="w-5 h-5 text-amber-500" /> Partially Eligible</>
+                              )}
+                              — Select Loan Terms
+                            </h3>
+                            <p className="text-sm text-zinc-500">
+                              Confirm or adjust your loan amount and tenure. Amount must be within your approved limit.
+                            </p>
+                          </div>
+                          
+                          <form action={async (formData) => {
+                            'use server';
+                            const { generateAndAcceptTermsAction } = await import('@/app/actions/loanTerms');
+                            await generateAndAcceptTermsAction(formData);
+                          }}>
+                            <EmiTermSelector 
+                              applicationId={app.id} 
+                              initialAmount={app.requestedAmount ? parseFloat(app.requestedAmount) : 100000} 
+                              initialTenure={app.requestedTenure || 36}
+                            />
+                          </form>
+                        </div>
+                      )}
+
+                      {/* ── STEP 5: Bank Verification ── */}
+                      {app.status === 'TERMS_SELECTED' && (
+                        <div className="border border-amber-100 rounded-2xl p-6 bg-amber-50/30">
+                          <h3 className="font-bold text-lg text-zinc-900 mb-1">Step 5: Bank Account Verification</h3>
+                          <p className="text-sm text-zinc-500 mb-6">Account number ending in <strong>000</strong> simulates failure.</p>
+                          
+                          <form action={async (formData) => {
+                            'use server';
+                            const { submitBankVerificationAction } = await import('@/app/actions/bankVerification');
+                            const result = await submitBankVerificationAction(app.id, formData);
+                            if (!result.success || result.error) {
+                              const { redirect } = await import('next/navigation');
+                              redirect('/dashboard?error=' + encodeURIComponent(result.error || 'Bank verification failed'));
+                            }
+                            if (result.result?.status === 'FAILED') {
+                              const { redirect } = await import('next/navigation');
+                              redirect('/dashboard?error=' + encodeURIComponent('Bank account verification was rejected. Please check your details and try again.'));
+                            }
+                          }} className="space-y-4 max-w-md">
+                            <div className="space-y-2">
+                              <Label>Account Number (9–18 digits)</Label>
+                              <Input type="text" name="accountNumber" className="bg-white" required />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>IFSC Code</Label>
+                              <Input type="text" name="ifscCode" placeholder="e.g. HDFC0001234" className="bg-white" required />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Account Holder Name</Label>
+                              <Input type="text" name="accountHolderName" className="bg-white" required />
+                            </div>
+                            <Button type="submit" className="w-full bg-amber-600 hover:bg-amber-700 text-white mt-2">
+                              Verify Bank Account
+                            </Button>
+                          </form>
+                        </div>
+                      )}
+
+                      {/* ── STEP 6: Declaration ── */}
+                      {app.status === 'BANK_VERIFIED' && (
+                        <div className="border border-indigo-100 rounded-2xl p-8 bg-indigo-50/50 text-center">
+                          <ShieldCheck className="w-12 h-12 text-indigo-600 mx-auto mb-4" />
+                          <h3 className="font-bold text-xl text-zinc-900 mb-4 tracking-tight">Final Declaration</h3>
+                          <div className="bg-white border border-zinc-200 p-5 rounded-xl text-sm text-zinc-600 mb-6 text-left max-w-md mx-auto italic font-medium shadow-sm">
+                            &quot;I hereby declare that the information provided is true and correct. I consent to EZFinanz processing my loan application and verifying my credit history.&quot;
+                          </div>
+                          <form action={async () => {
+                            'use server';
+                            const { submitDeclarationAction } = await import('@/app/actions/declaration');
+                            await submitDeclarationAction(app.id);
+                          }}>
+                            <Button type="submit" size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-white px-8">
+                              I Agree & Accept
+                            </Button>
+                          </form>
+                        </div>
+                      )}
+
+                      {/* ── STEP 7: Selfie ── */}
+                      {(app.status === 'DECLARATION_ACCEPTED' || app.status === 'SELFIE_PENDING') && (
+                        <div className="border border-indigo-100 rounded-2xl p-6 bg-white shadow-sm">
+                          <div className="flex items-center gap-3 mb-6">
+                            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 shrink-0">
+                              <Camera className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <h3 className="font-bold text-lg text-zinc-900 tracking-tight">Selfie Verification</h3>
+                              <p className="text-sm text-zinc-500">Final step! Take a clear photo of your face.</p>
+                            </div>
+                          </div>
+                          <p className="text-xs text-zinc-400 mb-4">Include <strong>blur</strong> or <strong>invalid</strong> in the filename to simulate failure.</p>
+
+                          {app.status === 'SELFIE_PENDING' && (
+                            <div className="mb-5 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm flex items-center gap-2">
+                              <AlertTriangle className="w-4 h-4 shrink-0"/> Previous selfie was rejected. Please upload a clearer photo.
+                            </div>
+                          )}
+
+                          <form action={async (formData) => {
+                            'use server';
+                            const { submitSelfieAction } = await import('@/app/actions/selfieVerification');
+                            const result = await submitSelfieAction(app.id, formData);
+                            if (result?.error) {
+                              const { redirect } = await import('next/navigation');
+                              redirect('/dashboard?error=' + encodeURIComponent(result.error));
+                            }
+                          }} className="max-w-md space-y-4">
+                            <Input type="file" name="selfie" accept="image/*" capture="user" required className="cursor-pointer h-12" />
+                            <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white">
+                              Upload Selfie & Finish
+                            </Button>
+                          </form>
+                        </div>
+                      )}
+
+                      {/* ── Terminal states ── */}
+                      {app.status === 'SUBMITTED' && (
+                        <div className="border border-blue-200 rounded-2xl p-8 bg-blue-50 text-center">
+                          <CheckCircle className="w-12 h-12 text-blue-600 mx-auto mb-4" />
+                          <h3 className="text-xl font-bold text-zinc-900 mb-2">Application Submitted!</h3>
+                          <p className="text-blue-700 text-sm">Your application is now safely in our system pending review.</p>
+                        </div>
+                      )}
+                      
+                      {app.status === 'UNDER_REVIEW' && (
+                        <div className="border border-indigo-200 rounded-2xl p-8 bg-indigo-50 text-center">
+                          <FileText className="w-12 h-12 text-indigo-500 mx-auto mb-4 animate-pulse" />
+                          <h3 className="text-xl font-bold text-zinc-900 mb-2">Under Review</h3>
+                          <p className="text-indigo-700 text-sm">Our team is carefully reviewing your application.</p>
+                        </div>
+                      )}
+                      
+                      {app.status === 'APPROVED' && (
+                        <div className="border border-emerald-200 rounded-2xl p-10 bg-emerald-50 text-center">
+                          <CheckCircle2 className="w-16 h-16 text-emerald-600 mx-auto mb-4" />
+                          <h3 className="text-2xl font-bold text-zinc-900 mb-2">Approved & Disbursed!</h3>
+                          <p className="text-emerald-700 text-sm mb-6">Your loan has been successfully sanctioned.</p>
+                          {loanMap[app.id] && (
+                            <div className="inline-block bg-white border border-emerald-200 rounded-2xl p-6 text-center shadow-sm">
+                              <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Amount Disbursed</p>
+                              <p className="text-3xl font-black text-emerald-600">₹{parseFloat(loanMap[app.id].disbursedAmount || '0').toLocaleString('en-IN')}</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {app.status === 'REJECTED' && (
+                        <div className="border border-red-200 rounded-2xl p-8 bg-red-50 text-center">
+                          <AlertTriangle className="w-12 h-12 text-red-600 mx-auto mb-4" />
+                          <h3 className="text-xl font-bold text-zinc-900 mb-2">Application Rejected</h3>
+                          <p className="text-red-700 text-sm">Unfortunately, we could not approve your application at this time.</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )
+              })}
             </div>
           )}
         </div>
-
-        {userApplications.length === 0 ? (
-          <p className="text-gray-400">No applications found.</p>
-        ) : (
-          <div className="space-y-4">
-            {userApplications.map(app => {
-              const eligibility = eligibilityMap[app.id]
-              const reasons: string[] = eligibility?.reasons ?? []
-              // Detect whether the blocking reason is credit score (unfixable via correction loop)
-              const creditScoreBlocked = reasons.some(r =>
-                r.toLowerCase().includes('credit score') && r.toLowerCase().includes('below')
-              )
-
-              return (
-                <div key={app.id} className="border p-4 rounded shadow bg-gray-800 text-white">
-                  <p><strong>ID:</strong> {app.id}</p>
-                  <p><strong>Status:</strong> {app.status}</p>
-                  {loanMap[app.id] && (
-                    <div className="mt-1 text-sm space-y-0.5">
-                      <p><strong>Loan Status:</strong> <span className="text-blue-400 font-bold">{loanMap[app.id].status}</span></p>
-                      {loanMap[app.id].sanctionedAmount && (
-                        <p><strong>Sanctioned Amount:</strong> ₹{parseFloat(loanMap[app.id].sanctionedAmount).toLocaleString('en-IN')}</p>
-                      )}
-                      {loanMap[app.id].disbursedAmount && (
-                        <p><strong>Disbursed Amount:</strong> <span className="text-green-400 font-bold">₹{parseFloat(loanMap[app.id].disbursedAmount!).toLocaleString('en-IN')}</span></p>
-                      )}
-                      {loanMap[app.id].disbursedAt && (
-                        <p><strong>Disbursed On:</strong> {new Date(loanMap[app.id].disbursedAt!).toLocaleString()}</p>
-                      )}
-                    </div>
-                  )}
-                  {app.requestedAmount && (
-                    <p><strong>Requested Amount:</strong> ₹{parseFloat(app.requestedAmount).toLocaleString('en-IN')}</p>
-                  )}
-                  {app.requestedTenure && (
-                    <p><strong>Tenure:</strong> {app.requestedTenure} months</p>
-                  )}
-                  <p><strong>Created At:</strong> {new Date(app.createdAt).toLocaleString()}</p>
-
-                  {/* ── STEP 1: KYC ── */}
-                  {(app.status === 'DRAFT' || app.status === 'KYC_PENDING') && (
-                    <form action={async (formData) => {
-                      'use server';
-                      const { submitKycAction } = await import('@/app/actions/kyc');
-                      await submitKycAction(formData);
-                    }} className="mt-4 p-4 border border-gray-600 rounded bg-gray-900 space-y-2">
-                      <h3 className="font-semibold text-lg">Step 1: Verify Identity (KYC)</h3>
-                      <p className="text-sm text-gray-400 mb-2">
-                        <strong>PAN Tips:</strong> Use <code className="bg-gray-700 px-1 rounded">ABCDE1000F</code> for Good Score (780).
-                        Use <code className="bg-gray-700 px-1 rounded">ABCDE1012F</code> for Medium (680). 
-                        Use <code className="bg-gray-700 px-1 rounded">ABCDE1002F</code> for Low (520).
-                        Use <code className="bg-gray-700 px-1 rounded">FAILP1234F</code> to simulate KYC failure.
-                        <br/>
-                        <strong>Aadhar Tips:</strong> Must be exactly 12 digits.
-                        <code className="bg-gray-700 px-1 rounded">100000000000</code> (Good), 
-                        <code className="bg-gray-700 px-1 rounded">100000000008</code> (Medium), 
-                        <code className="bg-gray-700 px-1 rounded">100000000031</code> (Low). 
-                        Use <code className="bg-gray-700 px-1 rounded">000012345678</code> to simulate failure.
-                      </p>
-                      <input type="hidden" name="applicationId" value={app.id} />
-                      <div>
-                        <label className="block text-sm mb-1">ID Type</label>
-                        <select name="idType" required className="w-full p-2 rounded text-black bg-white border border-gray-300">
-                          <option value="AADHAR">Aadhar</option>
-                          <option value="PAN">PAN</option>
-                        </select>
-                      </div>
-                      <div>
-                        <input
-                          type="text"
-                          name="fullName"
-                          placeholder="Enter your Full Name (as per ID)"
-                          required
-                          className="w-full p-2 rounded text-black bg-white border border-gray-300"
-                        />
-                      </div>
-                      <div>
-                        <input
-                          type="text"
-                          name="idNumber"
-                          placeholder="Enter ID Number (use ABCD1234 to guarantee eligibility)"
-                          required
-                          className="w-full p-2 rounded text-black bg-white border border-gray-300"
-                        />
-                      </div>
-                      <button type="submit" className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
-                        Submit KYC
-                      </button>
-                    </form>
-                  )}
-
-                  {/* ── STEP 2: Financial Details ── */}
-                  {(app.status === 'KYC_COMPLETED' || app.status === 'NOT_ELIGIBLE') && (
-                    <div className="mt-4 p-4 border rounded bg-blue-50 text-black">
-
-                      {/* NOT_ELIGIBLE: show reasons and detect if credit score is blocking */}
-                      {app.status === 'NOT_ELIGIBLE' && (
-                        <div className="mb-3 p-3 rounded border border-red-300 bg-red-50">
-                          <p className="font-semibold text-red-700 mb-1">❌ Not Eligible — Reason(s):</p>
-                          {reasons.length > 0 ? (
-                            <ul className="list-disc list-inside text-sm text-red-600 space-y-0.5">
-                              {reasons.map((r, i) => <li key={i}>{r}</li>)}
-                            </ul>
-                          ) : (
-                            <p className="text-sm text-red-600">No reason recorded.</p>
-                          )}
-
-                          {creditScoreBlocked && (
-                            <div className="mt-2 p-2 bg-amber-50 border border-amber-300 rounded text-amber-800 text-sm">
-                              <strong>⚠ Credit score is below the minimum (650).</strong>
-                              <br />
-                              This cannot be fixed by updating your income or amount.
-                              Your credit score is determined by your KYC ID via the bureau.
-                              To test with a good score, create a new application and use ID <strong>ABCD1234</strong> for KYC.
-                              
-                              <form action={async () => {
-                                'use server';
-                                const { abandonApplicationAction } = await import('@/app/actions/abandon');
-                                await abandonApplicationAction(app.id);
-                              }} className="mt-3">
-                                <button type="submit" className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-xs font-semibold">
-                                  Abandon Application &amp; Start Fresh
-                                </button>
-                              </form>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      <h4 className="font-semibold mb-1">
-                        {app.status === 'NOT_ELIGIBLE'
-                          ? 'Step 2 (Retry): Correct Financial Details'
-                          : 'Step 2: Submit Financial Details'}
-                      </h4>
-                      <p className="text-xs text-gray-500 mb-2">
-                        This will sync with the credit bureau and automatically evaluate your eligibility in one step.
-                      </p>
-
-                      <form action={async (formData) => {
-                        'use server';
-                        const { submitFinancialsAction } = await import('@/app/actions/financials');
-                        await submitFinancialsAction(formData);
-                      }} className="space-y-2">
-                        <input type="hidden" name="applicationId" value={app.id} />
-                        <div>
-                          <label className="block text-sm">Employment Type</label>
-                          <select name="employmentType" className="border p-2 rounded w-full" required>
-                            <option value="SALARIED">Salaried</option>
-                            <option value="SELF_EMPLOYED">Self Employed</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-sm">Employer Name</label>
-                          <input type="text" name="employerName" className="border p-2 rounded w-full" required />
-                        </div>
-                        <div>
-                          <label className="block text-sm">Designation</label>
-                          <input type="text" name="designation" className="border p-2 rounded w-full" required />
-                        </div>
-                        <div>
-                          <label className="block text-sm">Monthly Income (₹)</label>
-                          <input type="number" name="monthlyIncome" className="border p-2 rounded w-full" min="15001" placeholder="Minimum ₹15,000" required />
-                        </div>
-                        {app.status === 'NOT_ELIGIBLE' && (
-                          <>
-                            <div>
-                              <label className="block text-sm font-medium">Updated Requested Amount (₹)</label>
-                              <input
-                                type="number"
-                                name="correctedRequestedAmount"
-                                defaultValue={app.requestedAmount ? parseFloat(app.requestedAmount) : undefined}
-                                className="border p-2 rounded w-full"
-                                required
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium">Updated Tenure (Months)</label>
-                              <select name="correctedRequestedTenure" className="border p-2 rounded w-full" required defaultValue={app.requestedTenure ?? 60}>
-                                {[12, 24, 36, 48, 60].map(t => (
-                                  <option key={t} value={t}>{t} Months</option>
-                                ))}
-                              </select>
-                            </div>
-                          </>
-                        )}
-                        <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mt-2 w-full font-medium">
-                          Sync Credit Bureau &amp; Submit → Evaluate Eligibility
-                        </button>
-                      </form>
-                    </div>
-                  )}
-
-                  {/* ── STEP 3 (fallback): Run Eligibility Engine if stuck at FINANCIALS_COMPLETED ── */}
-                  {app.status === 'FINANCIALS_COMPLETED' && (
-                    <div className="mt-4 p-4 border rounded bg-indigo-50 text-black">
-                      <h4 className="font-semibold mb-2">Evaluate Eligibility</h4>
-                      <p className="text-sm text-gray-600 mb-2">Financial details saved. Click below to run the eligibility engine.</p>
-                      <form action={async (formData) => {
-                        'use server';
-                        const { evaluateEligibilityAction } = await import('@/app/actions/eligibility');
-                        await evaluateEligibilityAction(formData);
-                      }}>
-                        <input type="hidden" name="applicationId" value={app.id} />
-                        <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded">
-                          Run Eligibility Engine
-                        </button>
-                      </form>
-                    </div>
-                  )}
-
-                  {/* ── STEP 4: Select Loan Terms ── */}
-                  {(app.status === 'ELIGIBLE' || app.status === 'PARTIALLY_ELIGIBLE') && (
-                    <div className="mt-4 p-4 border rounded bg-green-50 text-black">
-                      <h4 className="font-semibold mb-1">
-                        {app.status === 'ELIGIBLE' ? '✅ Eligible!' : '⚡ Partially Eligible'} — Select Loan Terms
-                      </h4>
-                      <p className="text-sm mb-3 text-gray-600">
-                        Confirm or adjust your loan amount and tenure. Amount must be within your approved limit.
-                      </p>
-                      <form action={async (formData) => {
-                        'use server';
-                        const { generateAndAcceptTermsAction } = await import('@/app/actions/loanTerms');
-                        await generateAndAcceptTermsAction(formData);
-                      }} className="flex flex-col gap-3">
-                        <input type="hidden" name="applicationId" value={app.id} />
-                        <div>
-                          <label className="block text-sm">Final Loan Amount (₹)</label>
-                          <input
-                            type="number"
-                            name="requestedAmount"
-                            defaultValue={app.requestedAmount ? parseFloat(app.requestedAmount) : undefined}
-                            className="border p-2 rounded w-full"
-                            required
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm">Tenure (Months)</label>
-                          <select name="requestedTenure" className="border p-2 rounded w-full" required defaultValue={app.requestedTenure ?? 60}>
-                            {[12, 24, 36, 48, 60].map(t => (
-                              <option key={t} value={t}>{t} Months</option>
-                            ))}
-                          </select>
-                        </div>
-                        <button type="submit" className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded mt-2">
-                          Calculate &amp; Accept Terms
-                        </button>
-                      </form>
-                    </div>
-                  )}
-
-                  {/* ── STEP 5: Bank Verification ── */}
-                  {app.status === 'TERMS_SELECTED' && (
-                    <div className="mt-4 p-4 border rounded bg-yellow-50 text-black">
-                      <h4 className="font-semibold mb-2">Step 5: Bank Account Verification</h4>
-                      <p className="text-sm text-gray-600 mb-2">Account number ending in <strong>000</strong> simulates failure.</p>
-                      <form action={async (formData) => {
-                        'use server';
-                        const { submitBankVerificationAction } = await import('@/app/actions/bankVerification');
-                        const result = await submitBankVerificationAction(app.id, formData);
-                        if (!result.success || result.error) {
-                          const { redirect } = await import('next/navigation');
-                          redirect('/dashboard?error=' + encodeURIComponent(result.error || 'Bank verification failed'));
-                        }
-                        if (result.result?.status === 'FAILED') {
-                          const { redirect } = await import('next/navigation');
-                          redirect('/dashboard?error=' + encodeURIComponent('Bank account verification was rejected. Please check your details and try again.'));
-                        }
-                      }} className="space-y-2">
-                        <div>
-                          <label className="block text-sm">Account Number (9–18 digits)</label>
-                          <input type="text" name="accountNumber" className="border p-2 rounded w-full" required />
-                        </div>
-                        <div>
-                          <label className="block text-sm">IFSC Code (e.g. HDFC0001234)</label>
-                          <input type="text" name="ifscCode" className="border p-2 rounded w-full" required />
-                        </div>
-                        <div>
-                          <label className="block text-sm">Account Holder Name</label>
-                          <input type="text" name="accountHolderName" className="border p-2 rounded w-full" required />
-                        </div>
-                        <button type="submit" className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded mt-2">
-                          Verify Bank Account
-                        </button>
-                      </form>
-                    </div>
-                  )}
-
-                  {/* ── STEP 6: Declaration ── */}
-                  {app.status === 'BANK_VERIFIED' && (
-                    <div className="mt-4 p-4 border rounded bg-purple-50 text-black">
-                      <h4 className="font-semibold mb-2">Step 6: Declaration &amp; Consent</h4>
-                      <p className="text-sm italic mb-2">&ldquo;I hereby declare that the information provided is true and correct. I consent to EZFinanz processing my loan application.&rdquo;</p>
-                      <form action={async () => {
-                        'use server';
-                        const { submitDeclarationAction } = await import('@/app/actions/declaration');
-                        await submitDeclarationAction(app.id);
-                      }}>
-                        <button type="submit" className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded">
-                          Accept Declaration
-                        </button>
-                      </form>
-                    </div>
-                  )}
-
-                  {/* ── STEP 7: Selfie ── */}
-                  {(app.status === 'DECLARATION_ACCEPTED' || app.status === 'SELFIE_PENDING') && (
-                    <div className="mt-4 p-4 border rounded bg-pink-50 text-black">
-                      <h4 className="font-semibold mb-2">Step 7: Selfie Verification</h4>
-                      <p className="text-sm mb-2">Upload or take a selfie photo. Include <strong>blur</strong> or <strong>invalid</strong> in the filename to simulate failure.</p>
-                      {app.status === 'SELFIE_PENDING' && (
-                        <p className="text-sm text-amber-700 mb-2">⚠ Previous selfie failed. Please try again.</p>
-                      )}
-                      <form action={async (formData) => {
-                        'use server';
-                        const { submitSelfieAction } = await import('@/app/actions/selfieVerification');
-                        const result = await submitSelfieAction(app.id, formData);
-                        if (result?.error) {
-                          const { redirect } = await import('next/navigation');
-                          redirect('/dashboard?error=' + encodeURIComponent(result.error));
-                        }
-                      }} className="space-y-2">
-                        {/* capture="user" tells mobile browsers to open the front camera directly! */}
-                        <input type="file" name="selfie" accept="image/*" capture="user" required className="border p-2 rounded w-full bg-white" />
-                        <button type="submit" className="bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded">
-                          Upload &amp; Verify Selfie
-                        </button>
-                      </form>
-                    </div>
-                  )}
-
-                  {/* ── Terminal states ── */}
-                  {app.status === 'SUBMITTED' && (
-                    <div className="mt-4 p-4 border rounded bg-teal-50 text-black">
-                      <p className="font-semibold">✅ Application submitted and pending review.</p>
-                    </div>
-                  )}
-                  {app.status === 'UNDER_REVIEW' && (
-                    <div className="mt-4 p-4 border rounded bg-blue-50 text-black">
-                      <p className="font-semibold">🔍 Under review by our team.</p>
-                    </div>
-                  )}
-                  {app.status === 'APPROVED' && (
-                    <div className="mt-4 p-4 border rounded bg-green-50 text-black">
-                      <p className="font-semibold text-green-700">🎉 Approved!</p>
-                    </div>
-                  )}
-                  {app.status === 'REJECTED' && (
-                    <div className="mt-4 p-4 border rounded bg-red-50 text-black">
-                      <p className="font-semibold text-red-700">❌ Application rejected.</p>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
+      </main>
     </div>
   )
 }
